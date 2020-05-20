@@ -60,6 +60,7 @@ const campaignInfoFragment = `
     script
     answerOption
     answerActions
+    answerActionsData
     parentInteractionId
     isDeleted
   }
@@ -374,7 +375,8 @@ class AdminCampaignEdit extends React.Component {
         expandableBySuperVolunteers: true,
         extraProps: {
           customFields: this.props.campaignData.campaign.customFields,
-          availableActions: this.props.availableActionsData.availableActions
+          availableActions: this.props.organizationData.organization
+            .availableActions
         }
       },
       {
@@ -432,9 +434,8 @@ class AdminCampaignEdit extends React.Component {
     let jobId = null;
     if (pendingJobs.length > 0) {
       if (section.title === "Contacts") {
-        relatedJob = pendingJobs.filter(
-          job =>
-            job.jobType === "upload_contacts" || job.jobType === "contact_sql"
+        relatedJob = pendingJobs.filter(job =>
+          job.jobType.startsWith("ingest")
         )[0];
       } else if (section.title === "Texters") {
         relatedJob = pendingJobs.filter(
@@ -503,31 +504,36 @@ class AdminCampaignEdit extends React.Component {
     );
 
     return (
-      <div
-        style={{
-          marginBottom: 15,
-          fontSize: 16
-        }}
-      >
-        {this.state.startingCampaign ? (
-          <div
-            style={{
-              color: theme.colors.gray,
-              fontWeight: 800
-            }}
-          >
-            <CircularProgress
-              size={0.5}
-              style={{
-                verticalAlign: "middle",
-                display: "inline-block"
-              }}
-            />
-            Starting your campaign...
-          </div>
-        ) : (
-          notStarting
+      <div>
+        {this.props.campaignData.campaign.title && (
+          <h2>{this.props.campaignData.campaign.title}</h2>
         )}
+        <div
+          style={{
+            marginBottom: 15,
+            fontSize: 16
+          }}
+        >
+          {this.state.startingCampaign ? (
+            <div
+              style={{
+                color: theme.colors.gray,
+                fontWeight: 800
+              }}
+            >
+              <CircularProgress
+                size={0.5}
+                style={{
+                  verticalAlign: "middle",
+                  display: "inline-block"
+                }}
+              />
+              Starting your campaign...
+            </div>
+          ) : (
+            notStarting
+          )}
+        </div>
       </div>
     );
   }
@@ -733,8 +739,7 @@ AdminCampaignEdit.propTypes = {
   organizationData: PropTypes.object,
   params: PropTypes.object,
   location: PropTypes.object,
-  pendingJobsData: PropTypes.object,
-  availableActionsData: PropTypes.object
+  pendingJobsData: PropTypes.object
 };
 
 const mapQueriesToProps = ({ ownProps }) => ({
@@ -759,6 +764,15 @@ const mapQueriesToProps = ({ ownProps }) => ({
             lastName
             displayName
           }
+          availableActions {
+            name
+            displayName
+            instructions
+            clientChoiceData {
+              name
+              details
+            }
+          }
         }
       }
     `,
@@ -766,21 +780,6 @@ const mapQueriesToProps = ({ ownProps }) => ({
       organizationId: ownProps.params.organizationId
     },
     pollInterval: 20000
-  },
-  availableActionsData: {
-    query: gql`
-      query getActions($organizationId: String!) {
-        availableActions(organizationId: $organizationId) {
-          name
-          display_name
-          instructions
-        }
-      }
-    `,
-    variables: {
-      organizationId: ownProps.params.organizationId
-    },
-    forceFetch: true
   }
 });
 

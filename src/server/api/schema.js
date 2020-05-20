@@ -3,7 +3,7 @@ import GraphQLJSON from "graphql-type-json";
 import { GraphQLError } from "graphql/error";
 import isUrl from "is-url";
 
-import { gzip, makeTree } from "../../lib";
+import { gzip, makeTree, getHighestRole } from "../../lib";
 import { capitalizeWord } from "./lib/utils";
 import {
   assignTexters,
@@ -26,8 +26,7 @@ import {
   Tag,
   UserOrganization,
   r,
-  cacheableData,
-  loaders
+  cacheableData
 } from "../models";
 import { Notifications, sendUserNotification } from "../notifications";
 import { resolvers as assignmentResolvers } from "./assignment";
@@ -67,6 +66,8 @@ import {
   bulkSendMessages,
   findNewCampaignContact
 } from "./mutations";
+
+const ActionHandlers = require("../../integrations/action-handlers");
 
 const uuidv4 = require("uuid").v4;
 const JOBS_SAME_PROCESS = !!(
@@ -271,6 +272,7 @@ async function updateInteractionSteps(
         script: is.script,
         answer_option: is.answerOption,
         answer_actions: is.answerActions,
+        answer_actions_data: is.answerActionsData,
         campaign_id: campaignId,
         is_deleted: false
       });
@@ -294,6 +296,7 @@ async function updateInteractionSteps(
             script: is.script,
             answer_option: is.answerOption,
             answer_actions: is.answerActions,
+            answer_actions_data: is.answerActionsData,
             is_deleted: is.isDeleted
           });
       }
@@ -408,26 +411,20 @@ const rootMutations = {
 
       await accessRequired(user, organizationId, roleRequired);
 
-      currentRoles.forEach(async curRole => {
-        if (roles.indexOf(curRole) === -1) {
-          await r
-            .table("user_organization")
-            .getAll([organizationId, userId], { index: "organization_user" })
-            .filter({ role: curRole })
-            .delete();
-        }
-      });
-
-      newOrgRoles = roles
-        .filter(newRole => currentRoles.indexOf(newRole) === -1)
-        .map(newRole => ({
+      // Roles is sent as an array for historical purposes
+      // but roles are hierarchical, so we only want one user_organization
+      // record.
+      await r
+        .knex("user_organization")
+        .where({ organization_id: organizationId, user_id: userId })
+        .delete();
+      if (roles.length) {
+        const newRole = getHighestRole(roles);
+        await r.knex("user_organization").insert({
           organization_id: organizationId,
           user_id: userId,
           role: newRole
-        }));
-
-      if (newOrgRoles.length) {
-        await UserOrganization.save(newOrgRoles, { conflict: "update" });
+        });
       }
       await cacheableData.user.clearUser(userId);
       return loaders.organization.load(organizationId);
@@ -746,6 +743,7 @@ const rootMutations = {
             script: interaction.script,
             answerOption: interaction.answer_option,
             answerActions: interaction.answer_actions,
+            answerActionsData: interaction.answer_actions_data,
             isDeleted: interaction.is_deleted,
             campaign_id: newCampaignId,
             parentInteractionId: "new" + interaction.parent_interaction_id
@@ -758,6 +756,7 @@ const rootMutations = {
             script: interaction.script,
             answerOption: interaction.answer_option,
             answerActions: interaction.answer_actions,
+            answerActionsData: interaction.answer_actions_data,
             isDeleted: interaction.is_deleted,
             campaign_id: newCampaignId,
             parentInteractionId: interaction.parent_interaction_id
@@ -1105,62 +1104,75 @@ const rootMutations = {
     updateQuestionResponses: async (
       _,
       { questionResponses, campaignContactId },
-      { loaders }
+      { loaders, user }
     ) => {
-      const count = questionResponses.length;
+      const contact = await loaders.campaignContact.load(campaignContactId);
+      const campaign = await loaders.campaign.load(contact.campaign_id);
+      await assignmentRequiredOrAdminRole(
+        user,
+        campaign.organization_id,
+        contact.assignment_id,
+        contact
+      );
 
-      for (let i = 0; i < count; i++) {
-        const questionResponse = questionResponses[i];
-        const { interactionStepId, value } = questionResponse;
-        await r
-          .table("question_response")
-          .getAll(campaignContactId, { index: "campaign_contact_id" })
-          .filter({ interaction_step_id: interactionStepId })
-          .delete();
+      await cacheableData.questionResponse.save(
+        campaignContactId,
+        questionResponses
+      );
 
-        // TODO: maybe undo action_handler if updated answer
+      // The rest is for ACTION_HANDLERS
+      const organization = await loaders.organization.load(
+        campaign.organization_id
+      );
+      const actionHandlers = getConfig("ACTION_HANDLERS", organization);
+      if (actionHandlers) {
+        const interactionSteps =
+          campaign.interactionSteps ||
+          (await cacheableData.campaign.dbInteractionSteps(campaign.id));
 
-        const qr = await new QuestionResponse({
-          campaign_contact_id: campaignContactId,
-          interaction_step_id: interactionStepId,
-          value
-        }).save();
-        const interactionStepResult = await r
-          .knex("interaction_step")
-          // TODO: is this really parent_interaction_id or just interaction_id?
-          .where({
-            parent_interaction_id: interactionStepId,
-            answer_option: value
-          })
-          .whereNot("answer_actions", "")
-          .whereNotNull("answer_actions");
+        const count = questionResponses.length;
 
-        const interactionStepAction =
-          interactionStepResult.length &&
-          interactionStepResult[0].answer_actions;
-        if (interactionStepAction) {
-          // run interaction step handler
-          try {
-            const handler = require(`../../integrations/action-handlers/${interactionStepAction}.js`);
-            handler.processAction(
-              qr,
-              interactionStepResult[0],
-              campaignContactId
-            );
-          } catch (err) {
-            console.error(
-              "Handler for InteractionStep",
-              interactionStepId,
-              "Does Not Exist:",
-              interactionStepAction
-            );
+        for (let i = 0; i < count; i++) {
+          const questionResponse = questionResponses[i];
+          const { interactionStepId, value } = questionResponse;
+
+          const interactionStepResult = interactionSteps.filter(
+            is =>
+              is.answer_actions &&
+              is.answer_option === value &&
+              is.parent_interaction_id === Number(interactionStepId)
+          );
+
+          const interactionStepAction =
+            interactionStepResult.length &&
+            interactionStepResult[0].answer_actions;
+          if (interactionStepAction) {
+            // run interaction step handler
+            try {
+              const handler = await ActionHandlers.getActionHandler(
+                interactionStepAction,
+                organization,
+                user
+              );
+              handler.processAction(
+                questionResponse,
+                interactionStepResult[0],
+                campaignContactId,
+                contact,
+                campaign,
+                organization
+              );
+            } catch (err) {
+              console.error(
+                "Handler for InteractionStep",
+                interactionStepId,
+                "Does Not Exist:",
+                interactionStepAction
+              );
+            }
           }
         }
       }
-      // update cache
-      await cacheableData.questionResponse.clearQuery(campaignContactId);
-
-      const contact = loaders.campaignContact.load(campaignContactId);
       return contact;
     },
     reassignCampaignContacts: async (
@@ -1230,8 +1242,9 @@ const rootMutations = {
         newTexterUserId
       );
     },
-    importCampaignScript: async (_, { campaignId, url }, { loaders }) => {
+    importCampaignScript: async (_, { campaignId, url }, { loaders, user }) => {
       const campaign = await loaders.campaign.load(campaignId);
+      await accessRequired(user, campaignId.organization_id, "ADMIN", true);
       if (campaign.is_started || campaign.is_archived) {
         throw new GraphQLError(
           "Cannot import a campaign script for a campaign that is started or archived"
@@ -1305,7 +1318,7 @@ const rootMutations = {
 const rootResolvers = {
   Action: {
     name: o => o.name,
-    display_name: o => o.display_name,
+    displayName: o => o.displayName,
     instructions: o => o.instructions
   },
   FoundContact: {
@@ -1360,30 +1373,6 @@ const rootResolvers = {
         return await cacheableData.user.userOrgs(user.id, "TEXTER");
       }
     },
-    availableActions: (_, { organizationId }, { user }) => {
-      if (!process.env.ACTION_HANDLERS) {
-        return [];
-      }
-      const allHandlers = process.env.ACTION_HANDLERS.split(",");
-
-      const availableHandlers = allHandlers
-        .map(handler => {
-          return {
-            name: handler,
-            handler: require(`../../integrations/action-handlers/${handler}.js`)
-          };
-        })
-        .filter(async h => h && (await h.handler.available(organizationId)));
-
-      const availableHandlerObjects = availableHandlers.map(handler => {
-        return {
-          name: handler.name,
-          display_name: handler.handler.displayName(),
-          instructions: handler.handler.instructions()
-        };
-      });
-      return availableHandlerObjects;
-    },
     conversations: async (
       _,
       {
@@ -1396,9 +1385,15 @@ const rootResolvers = {
       },
       { user }
     ) => {
+      console.log(
+        "getConversations root resolver",
+        cursor,
+        organizationId,
+        contactsFilter
+      );
       await accessRequired(user, organizationId, "SUPERVOLUNTEER", true);
-
-      return getConversations(
+      console.log("getConversations root post access", organizationId);
+      const data = await getConversations(
         cursor,
         organizationId,
         campaignsFilter,
@@ -1406,6 +1401,8 @@ const rootResolvers = {
         contactsFilter,
         utc
       );
+      console.log("getConversations root post data", data);
+      return data;
     },
     campaigns: async (
       _,
@@ -1417,11 +1414,27 @@ const rootResolvers = {
     },
     people: async (
       _,
-      { organizationId, cursor, campaignsFilter, role, sortBy },
+      {
+        organizationId,
+        cursor,
+        campaignsFilter,
+        role,
+        sortBy,
+        filterString,
+        filterBy
+      },
       { user }
     ) => {
       await accessRequired(user, organizationId, "SUPERVOLUNTEER");
-      return getUsers(organizationId, cursor, campaignsFilter, role, sortBy);
+      return getUsers(
+        organizationId,
+        cursor,
+        campaignsFilter,
+        role,
+        sortBy,
+        filterString,
+        filterBy
+      );
     },
     tags: async (_, { organizationId }, { user }) => {
       await accessRequired(user, organizationId, "SUPERVOLUNTEER");

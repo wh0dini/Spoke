@@ -28,7 +28,7 @@ import {
   DemoTexterNeedsMessage,
   DemoTexterNeedsResponse,
   DemoTexterNeedsResponse2ndQuestion
-} from "./components/DemoTexterAssignment";
+} from "./components/AssignmentTexter/Demo";
 
 export default function makeRoutes(requireAuth = () => {}) {
   return (
@@ -131,6 +131,15 @@ export default function makeRoutes(requireAuth = () => {}) {
                 components={{
                   fullScreen: props => (
                     <TexterTodo {...props} messageStatus="closed" />
+                  ),
+                  topNav: null
+                }}
+              />
+              <Route
+                path="allreplies"
+                components={{
+                  fullScreen: props => (
+                    <TexterTodo {...props} messageStatus="allReplies" />
                   ),
                   topNav: null
                 }}
