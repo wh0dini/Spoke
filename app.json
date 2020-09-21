@@ -189,7 +189,6 @@
     }
   },
   "addons": [
-    "heroku-postgresql:standard-0",
     {
       "plan": "heroku-postgresql:standard-0",
       "options": {
