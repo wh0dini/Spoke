@@ -222,7 +222,7 @@ export class ContactController extends React.Component {
   incrementCurrentContactIndex = increment => {
     // console.log('incrementCurIndex', this.state.currentContactIndex, (this.props.contacts[this.state.currentContactIndex]||{}).id, this.props.contacts.length)
     let newIndex = this.state.currentContactIndex;
-    newIndex = newIndex + increment;
+    newIndex = newIndex + increment; //MINUS OPTED_OUT===TRUE
     this.updateCurrentContactIndex(newIndex);
   };
 
