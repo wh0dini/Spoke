@@ -1,5 +1,22 @@
 # Release Notes
 
+## v11.1
+
+_October 2021:_ Version 11.1
+
+11.1 is a bug-fix release.  After many changes in 11.0, there were a few problems that surfaced and with the help of reporting from the community (special shoutout to Karla Bradley at NYCET and Brendan, Daniel, and Amy at State Voices).
+
+### Bug-fixes
+* Campaign Admin: Texter manual changing/adding of assigned triggered app failure
+* Setting/Updating Twilio credentials in admin Settings failure
+* Buying numbers for an organization's message service failure
+* Clicking Re-open
+* minor additions/fixes to service-managers api
+
+### Appreciations
+
+* [Arique Aguilar](https://github.com/Arique1104), [Larry Person](https://github.com/lperson), [Kathy Nguyen](https://github.com/crayolakat), [Schuyler Duveen](https://github.com/schuyler1d), Mark Houghton, everyone at NYCET and State Voices for bug reporting and testing.
+
 ## v11.0
 
 _August 2021:_ Version 11.0
@@ -53,7 +70,7 @@ For those that used the experimental feature EXPERIMENTAL_CAMPAIGN_PHONE_NUMBERS
 EXPERIMENTAL_TWILIO_PER_CAMPAIGN_MESSAGING_SERVICE is no longer supported.  Please create an issue if you still have a use-case for this -- there is tentative work to move its functionality into per-campaign-messageservices as well, but only if it still has users.
 
 ### Appreciations
-* [Adam Greenspan](agreenspan24), [Akash Jairam](https://github.com/Akash-Jairam), [Arique Aguilar](https://github.com/Arique1104) (our new Community Manager -- Welcome!), [Cody Gordon](https://github.com/codygordon), [Fryda Guedes](https://github.com/Frydafly), [Kathy Nguyen](https://github.com/crayolakat) [Schuyler Duveen](https://github.com/schuyler1d), [Stefan Hayden](https://github.com/stefanhayden),  and Mark Houghton and [Barbara Atkins](https://github.com/bdatkins) for QA
+* [Adam Greenspan](agreenspan24), [Akash Jairam](https://github.com/Akash-Jairam), [Arique Aguilar](https://github.com/Arique1104) (our new Community Manager -- Welcome!), [Asha Sulaiman](https://github.com/asha15), [Cody Gordon](https://github.com/codygordon), [Fryda Guedes](https://github.com/Frydafly), [Kathy Nguyen](https://github.com/crayolakat), [Neely Kartha](https://github.com/nkartha2), [Schuyler Duveen](https://github.com/schuyler1d), [Stefan Hayden](https://github.com/stefanhayden),  and Mark Houghton and [Barbara Atkins](https://github.com/bdatkins) for QA
 
 
 ## v10.2
