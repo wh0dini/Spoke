@@ -180,8 +180,8 @@ class Settings extends React.Component {
           title={"Service Management"}
           style={{
             backgroundColor: allFullyConfigured
-              ? theme.colors.green
-              : theme.colors.yellow
+              ? this.props.muiTheme.palette.success.main
+              : this.props.muiTheme.palette.warning.main
           }}
         />
         <CardContent>
@@ -198,10 +198,10 @@ class Settings extends React.Component {
                   style={{
                     backgroundColor:
                       sm.fullyConfigured === true
-                        ? theme.colors.green
+                        ? this.props.muiTheme.palette.success.main
                         : sm.fullyConfigured === false
-                        ? theme.colors.yellow
-                        : theme.colors.lightGray
+                        ? this.props.muiTheme.palette.warning.main
+                        : this.props.muiTheme.palette.info.main
                   }}
                 />
                 <CardContent>
@@ -249,8 +249,8 @@ class Settings extends React.Component {
           title={`${name.toUpperCase().charAt(0) + name.slice(1)} Config`}
           style={{
             backgroundColor: this.state.serviceVendorAllSet
-              ? theme.colors.green
-              : theme.colors.yellow
+              ? this.props.muiTheme.palette.success.main
+              : this.props.muiTheme.palette.warning.main
           }}
         />
         <ConfigServiceVendor
