@@ -1,7 +1,10 @@
 import { r, Campaign } from "../../models";
 import { modelWithExtraProps } from "./lib";
-import { assembleAnswerOptions } from "../../../lib/interaction-step-helpers";
-import { getFeatures } from "../../api/lib/config";
+import {
+  assembleAnswerOptions,
+  getUsedScriptFields
+} from "../../../lib/interaction-step-helpers";
+import { getFeatures, getConfig } from "../../api/lib/config";
 import organizationCache from "./organization";
 
 // This should be cached data for a campaign that will not change
@@ -24,17 +27,30 @@ import organizationCache from "./organization";
 const cacheKey = id => `${process.env.CACHE_PREFIX || ""}campaign-${id}`;
 const infoCacheKey = id =>
   `${process.env.CACHE_PREFIX || ""}campaigninfo-${id}`;
+const exportCampaignCacheKey = id =>
+  `${process.env.CACHE_PREFIX || ""}campaignexport-${id}`;
 
 const CONTACT_CACHE_ENABLED =
   process.env.REDIS_CONTACT_CACHE || global.REDIS_CONTACT_CACHE;
 
 const dbCustomFields = async id => {
-  const campaignContacts = await r
-    .table("campaign_contact")
-    .getAll(id, { index: "campaign_id" })
-    .limit(1);
-  if (campaignContacts.length > 0) {
-    return Object.keys(JSON.parse(campaignContacts[0].custom_fields));
+  // This rather Byzantine query just to get the first record
+  // is due to postgres query planner (for 11.8 anyway) being particularly aggregious
+  // This forces the use of the campaign_id index to get the minimum contact.id
+  const firstContact = await r
+    .knex("campaign_contact")
+    .select("custom_fields")
+    .whereIn(
+      "campaign_contact.id",
+      r
+        .knex("campaign")
+        .join("campaign_contact", "campaign_contact.campaign_id", "campaign.id")
+        .select(r.knex.raw("min(campaign_contact.id) as id"))
+        .where("campaign.id", id)
+    )
+    .first();
+  if (firstContact) {
+    return Object.keys(JSON.parse(firstContact.custom_fields));
   }
   return [];
 };
@@ -67,7 +83,6 @@ const clear = async (id, campaign) => {
 };
 
 const loadDeep = async id => {
-  // console.log('load campaign deep', id)
   if (r.redis) {
     const campaign = await Campaign.get(id);
     if (Array.isArray(campaign) && campaign.length === 0) {
@@ -79,9 +94,24 @@ const loadDeep = async id => {
       // do not cache archived campaigns
       return campaign;
     }
-    // console.log('campaign loaddeep', campaign)
     campaign.customFields = await dbCustomFields(id);
     campaign.interactionSteps = await dbInteractionSteps(id);
+    campaign.usedFields = getUsedScriptFields(
+      campaign.interactionSteps,
+      "script"
+    );
+    if (getConfig("MOBILIZE_EVENT_SHIFTER_URL")) {
+      campaign.usedFields.cell = 1;
+      campaign.usedFields.email = 1;
+      campaign.usedFields.zip = 1;
+      campaign.usedFields.event_id = 1;
+    }
+    if (getConfig("TEXTER_SIDEBOX_FIELDS")) {
+      const fields = getConfig("TEXTER_SIDEBOX_FIELDS").split(",");
+      fields.forEach(f => {
+        campaign.usedFields[f] = 1;
+      });
+    }
     campaign.contactTimezones = await dbContactTimezones(id);
     campaign.contactsCount = await r.getCount(
       r.knex("campaign_contact").where("campaign_id", id)
@@ -216,6 +246,65 @@ const campaignCache = {
       return data || {};
     }
     return {};
+  },
+  saveExportData: async (id, data) => {
+    if (r.redis) {
+      const exportCacheKey = exportCampaignCacheKey(id);
+      await r.redis
+        .multi()
+        .set(exportCacheKey, JSON.stringify(data))
+        .expire(exportCacheKey, 43200)
+        .execAsync();
+    }
+  },
+  getExportData: async id => {
+    if (r.redis) {
+      const exportCacheKey = exportCampaignCacheKey(id);
+      const data = await r.redis.getAsync(exportCacheKey);
+      if (data) {
+        return JSON.parse(data);
+      }
+    }
+    return null;
+  },
+  setFeatures: async (id, newFeatures) => {
+    if (!id || !newFeatures) {
+      return;
+    }
+    const features = await r.knex.transaction(async trx => {
+      const campaignDb = await trx("campaign")
+        .where("id", id)
+        .select("features");
+      const features = getFeatures(campaignDb);
+      let changes = false;
+      for (const [featureName, featureValue] of Object.entries(newFeatures)) {
+        if (features[featureName] !== featureValue) {
+          features[featureName] = featureValue;
+          changes = true;
+        }
+      }
+      if (changes) {
+        const featuresString = JSON.stringify(features);
+        await trx("campaign")
+          .where("id", id)
+          .update("features", featuresString);
+        if (r.redis) {
+          const campaignCache = await r.redis.getAsync(cacheKey(id));
+          if (campaignCache) {
+            const campaignObj = JSON.parse(campaignCache);
+            campaignObj.feature = features;
+            campaignObj.features = featuresString;
+            await r.redis
+              .multi()
+              .set(cacheKey(id), JSON.stringify(campaignObj))
+              .expire(cacheKey(id), 10000)
+              .execAsync();
+          }
+        }
+      }
+      return features;
+    });
+    return features;
   },
   updateAssignedCount: async id => {
     if (r.redis) {

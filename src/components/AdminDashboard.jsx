@@ -13,7 +13,7 @@ const styles = StyleSheet.create({
     ...theme.layouts.multiColumn.container
   },
   sidebar: {
-    minHeight: "calc(100vh - 56px)"
+    minHeight: "calc(100vh - 65px)"
   },
   content: {
     ...theme.layouts.multiColumn.flexColumn,
@@ -66,6 +66,7 @@ class AdminDashboard extends React.Component {
 
     // HACK: Setting params.adminPerms helps us hide non-supervolunteer functionality
     params.adminPerms = hasRole("ADMIN", roles || []);
+    params.ownerPerms = hasRole("OWNER", roles || []);
 
     let sections = [
       {
@@ -79,14 +80,14 @@ class AdminDashboard extends React.Component {
         role: "ADMIN"
       },
       {
-        name: "Opt-outs",
-        path: "optouts",
-        role: "ADMIN"
-      },
-      {
         name: "Message Review",
         path: "incoming",
         role: "SUPERVOLUNTEER"
+      },
+      {
+        name: "Bulk Script Editor",
+        path: "bulk-script-editor",
+        role: "ADMIN"
       },
       {
         name: "Tags",
@@ -101,13 +102,9 @@ class AdminDashboard extends React.Component {
       {
         name: "Phone Numbers",
         path: "phone-numbers",
-        role: "OWNER"
+        role: "ADMIN"
       }
     ];
-
-    if (window.EXPERIMENTAL_TAGS === false) {
-      sections = sections.filter(section => section.name !== "Tags");
-    }
 
     if (!this.props.data.organization.phoneInventoryEnabled) {
       sections = sections.filter(section => section.name !== "Phone Numbers");

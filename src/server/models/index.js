@@ -21,6 +21,7 @@ import ZipCode from "./zip-code";
 import Log from "./log";
 import Tag from "./tag";
 import TagCampaignContact from "./tag-campaign-contact";
+import OrganizationContact from "./organization-contact";
 
 import thinky from "./thinky";
 import datawarehouse from "./datawarehouse";
@@ -34,10 +35,13 @@ function createLoader(model, opts) {
     if (cacheObj && cacheObj.load) {
       return keys.map(async key => await cacheObj.load(key));
     }
-    const docs = await model.getAll(...keys, { index: idKey });
-    return keys.map(key =>
-      docs.find(doc => doc[idKey].toString() === key.toString())
-    );
+    const docs = await thinky.r
+      .knexReadOnly(model.tableName)
+      .whereIn(idKey, keys);
+    return keys.map(key => {
+      const result = docs.find(doc => doc[idKey].toString() === key.toString());
+      return result ? new model(result) : null;
+    });
   });
 }
 
@@ -49,8 +53,10 @@ const tableList = [
   "campaign_admin",
   "assignment",
   // the rest are alphabetical
+  "assignment_feedback",
   "campaign_contact", // ?good candidate (or by cell)
   "canned_response", // good candidate
+  "organization_contact",
   "interaction_step",
   "invite",
   "job_request",
@@ -61,6 +67,7 @@ const tableList = [
   "question_response",
   "tag",
   "tag_campaign_contact",
+  "tag_canned_response",
   "owned_phone_number",
   "user_cell",
   "user_organization",
@@ -88,10 +95,24 @@ function dropTables() {
   });
 }
 
+const truncateTables = async () => {
+  // FUTURE: maybe this would speed up tests?
+  // Tentative experiments suggest it might shave a minute off
+  const isSqlite = /sqlite/.test(thinky.k.client.config.client);
+  if (isSqlite) {
+    await Promise.all(tableList.map(t => thinky.k(t).truncate()));
+  } else {
+    // Postgres lets (and requires) that you drop them all at once
+    await thinky.k.raw(
+      'TRUNCATE "' + tableList.join('", "') + '" RESTART IDENTITY'
+    );
+  }
+};
+
 const createLoaders = () => ({
   // Note: loaders with cacheObj should also run loaders.XX.clear(id)
   //  on clear on the cache as well.
-  assignment: createLoader(Assignment),
+  assignment: createLoader(Assignment, { cacheObj: cacheableData.assignment }),
   campaign: createLoader(Campaign, { cacheObj: cacheableData.campaign }),
   invite: createLoader(Invite),
   organization: createLoader(Organization, {
@@ -130,10 +151,12 @@ export {
   createTablesIfNecessary,
   dropTables,
   datawarehouse,
+  truncateTables,
   Assignment,
   Campaign,
   CampaignAdmin,
   CampaignContact,
+  OrganizationContact,
   InteractionStep,
   Invite,
   JobRequest,

@@ -1,42 +1,42 @@
 import gql from "graphql-tag";
-import { r } from "../../../../src/server/models";
-import { getConfig } from "../../../../src/server/api/lib/config";
-import { dataQuery as TexterTodoListQuery } from "../../../../src/containers/TexterTodoList";
-import { dataQuery as TexterTodoQuery } from "../../../../src/containers/TexterTodo";
 import { campaignDataQuery as AdminCampaignEditQuery } from "../../../../src/containers/AdminCampaignEdit";
-import { campaignsQuery } from "../../../../src/containers/PaginatedCampaignsRetriever";
-
 import {
   bulkReassignCampaignContactsMutation,
   reassignCampaignContactsMutation
 } from "../../../../src/containers/AdminIncomingMessageList";
-
-import { makeTree } from "../../../../src/lib";
-import twilio from "../../../../src/server/api/lib/twilio";
-
+import { campaignsQuery } from "../../../../src/containers/PaginatedCampaignsRetriever";
 import {
-  setupTest,
+  campaignQuery,
+  dataQuery as TexterTodoQuery
+} from "../../../../src/containers/TexterTodo";
+import { dataQuery as TexterTodoListQuery } from "../../../../src/containers/TexterTodoList";
+import * as twilio from "../../../../src/extensions/service-vendors/twilio";
+import { getMessageServiceConfig } from "../../../../src/extensions/service-vendors/service_map";
+import { makeTree } from "../../../../src/lib";
+import { getConfig } from "../../../../src/server/api/lib/config";
+import { cacheableData, r } from "../../../../src/server/models";
+import {
+  assignTexter,
+  bulkSendMessages,
   cleanupTest,
-  createUser,
+  copyCampaign,
+  createCampaign,
+  createCannedResponses,
+  createContacts,
   createInvite,
   createOrganization,
-  createCampaign,
-  saveCampaign,
-  copyCampaign,
-  createContacts,
-  createTexter,
-  assignTexter,
   createScript,
-  createCannedResponses,
-  startCampaign,
+  createTexter,
+  createUser,
+  ensureOrganizationTwilioWithMessagingService,
   getCampaignContact,
-  sendMessage,
-  bulkSendMessages,
   runGql,
-  sleep
+  saveCampaign,
+  sendMessage,
+  setupTest,
+  sleep,
+  startCampaign
 } from "../../../test_helpers";
-
-jest.mock("../../../../src/server/api/lib/twilio");
 
 let testAdminUser;
 let testInvite;
@@ -92,6 +92,7 @@ afterEach(async () => {
   queryLog = null;
   r.knex.removeListener("query", spokeDbListener);
   await cleanupTest();
+  jest.restoreAllMocks();
   if (r.redis) r.redis.flushdb();
 }, global.DATABASE_SETUP_TEARDOWN_TIMEOUT);
 
@@ -127,7 +128,7 @@ it("save campaign data, edit it, make sure the last value", async () => {
     testTexterUser
   );
   // empty before we start the campaign
-  expect(texterCampaignDataResults.data.currentUser.todos).toEqual([]);
+  expect(texterCampaignDataResults.data.user.todos).toEqual([]);
 
   // now we start and confirm that we can access it
   await startCampaign(testAdminUser, testCampaign);
@@ -136,11 +137,11 @@ it("save campaign data, edit it, make sure the last value", async () => {
     { organizationId },
     testTexterUser
   );
+  expect(texterCampaignDataResults.data.user.todos[0].campaign.title).toEqual(
+    "test campaign"
+  );
   expect(
-    texterCampaignDataResults.data.currentUser.todos[0].campaign.title
-  ).toEqual("test campaign");
-  expect(
-    texterCampaignDataResults.data.currentUser.todos[0].campaign.description
+    texterCampaignDataResults.data.user.todos[0].campaign.description
   ).toEqual("test description");
 
   // now we modify it, and confirm that it changes
@@ -167,9 +168,9 @@ it("save campaign data, edit it, make sure the last value", async () => {
     testTexterUser
   );
 
-  expect(
-    texterCampaignDataResults.data.currentUser.todos[0].campaign.title
-  ).toEqual("test campaign new title");
+  expect(texterCampaignDataResults.data.user.todos[0].campaign.title).toEqual(
+    "test campaign new title"
+  );
 });
 
 it("save campaign interaction steps, edit it, make sure the last value is set", async () => {
@@ -234,13 +235,8 @@ it("save campaign interaction steps, edit it, make sure the last value is set", 
   // now we start and confirm that we can access the script as a texter
 
   let texterCampaignDataResults = await runGql(
-    TexterTodoQuery,
+    campaignQuery,
     {
-      contactsFilter: {
-        messageStatus: "needsMessage",
-        isOptedOut: false,
-        validTimezone: true
-      },
       assignmentId
     },
     testTexterUser
@@ -284,13 +280,8 @@ it("save campaign interaction steps, edit it, make sure the last value is set", 
     campaignDataResults.data.campaign.interactionSteps[1].questionText
   ).toEqual("hmm1 after campaign start");
   texterCampaignDataResults = await runGql(
-    TexterTodoQuery,
+    campaignQuery,
     {
-      contactsFilter: {
-        messageStatus: "needsMessage",
-        isOptedOut: false,
-        validTimezone: true
-      },
       assignmentId
     },
     testTexterUser
@@ -371,7 +362,6 @@ it("should save campaign canned responses across copies and match saved data", a
     { campaignId: testCampaign.id },
     testAdminUser
   );
-
   expect(campaignDataResults.data.campaign.cannedResponses.length).toEqual(6);
   for (let i = 0; i < 6; i++) {
     expect(campaignDataResults.data.campaign.cannedResponses[i].title).toEqual(
@@ -475,7 +465,8 @@ describe("Reassignments", async () => {
           isOptedOut: false,
           validTimezone: true
         },
-        assignmentId
+        assignmentId,
+        organizationId
       },
       testTexterUser
     );
@@ -505,7 +496,8 @@ describe("Reassignments", async () => {
           isOptedOut: false,
           validTimezone: true
         },
-        assignmentId
+        assignmentId,
+        organizationId
       },
       testTexterUser
     );
@@ -536,7 +528,8 @@ describe("Reassignments", async () => {
           isOptedOut: false,
           validTimezone: true
         },
-        assignmentId
+        assignmentId,
+        organizationId
       },
       testTexterUser
     );
@@ -552,8 +545,7 @@ describe("Reassignments", async () => {
       75
     );
 
-    const assignmentId2 =
-      texterCampaignDataResults2.data.currentUser.todos[0].id;
+    const assignmentId2 = texterCampaignDataResults2.data.user.todos[0].id;
     texterCampaignDataResults = await runGql(
       TexterTodoQuery,
       {
@@ -562,6 +554,7 @@ describe("Reassignments", async () => {
           isOptedOut: false,
           validTimezone: true
         },
+        organizationId,
         assignmentId: assignmentId2
       },
       testTexterUser2
@@ -597,6 +590,7 @@ describe("Reassignments", async () => {
           isOptedOut: false,
           validTimezone: true
         },
+        organizationId,
         assignmentId: assignmentId2
       },
       testTexterUser2
@@ -615,6 +609,7 @@ describe("Reassignments", async () => {
           isOptedOut: false,
           validTimezone: true
         },
+        organizationId,
         assignmentId: assignmentId2
       },
       testTexterUser2
@@ -651,6 +646,7 @@ describe("Reassignments", async () => {
           isOptedOut: false,
           validTimezone: true
         },
+        organizationId,
         assignmentId: assignmentId2
       },
       testTexterUser2
@@ -669,6 +665,7 @@ describe("Reassignments", async () => {
           isOptedOut: false,
           validTimezone: true
         },
+        organizationId,
         assignmentId: assignmentId2
       },
       testTexterUser2
@@ -694,7 +691,8 @@ describe("Reassignments", async () => {
           isOptedOut: false,
           validTimezone: true
         },
-        assignmentId
+        assignmentId,
+        organizationId
       },
       testTexterUser
     );
@@ -706,6 +704,7 @@ describe("Reassignments", async () => {
           isOptedOut: false,
           validTimezone: true
         },
+        organizationId,
         assignmentId: assignmentId2
       },
       testTexterUser2
@@ -752,7 +751,8 @@ describe("Reassignments", async () => {
           isOptedOut: false,
           validTimezone: true
         },
-        assignmentId
+        assignmentId,
+        organizationId
       },
       testTexterUser
     );
@@ -764,6 +764,7 @@ describe("Reassignments", async () => {
           isOptedOut: false,
           validTimezone: true
         },
+        organizationId,
         assignmentId: assignmentId2
       },
       testTexterUser2
@@ -808,7 +809,8 @@ describe("Reassignments", async () => {
           isOptedOut: false,
           validTimezone: true
         },
-        assignmentId
+        assignmentId,
+        organizationId
       },
       testTexterUser
     );
@@ -821,7 +823,8 @@ describe("Reassignments", async () => {
           isOptedOut: false,
           validTimezone: true
         },
-        assignmentId: assignmentId2
+        assignmentId: assignmentId2,
+        organizationId
       },
       testTexterUser2
     );
@@ -844,7 +847,6 @@ describe("Bulk Send", async () => {
   const OLD_ENV = process.env;
 
   beforeEach(async () => {
-    jest.resetModules(); // this is important - it clears the cache
     process.env = {
       ...OLD_ENV
     };
@@ -860,7 +862,7 @@ describe("Bulk Send", async () => {
     resultTestFunction
   ) => {
     process.env.ALLOW_SEND_ALL = params.allowSendAll;
-    process.env.NOT_IN_USA = params.notInUsa;
+    process.env.ALLOW_SEND_ALL_ENABLED = params.allowSendAllEnabled;
     process.env.BULK_SEND_CHUNK_SIZE = params.bulkSendChunkSize;
 
     testCampaign.use_dynamic_assignment = true;
@@ -874,7 +876,8 @@ describe("Bulk Send", async () => {
           isOptedOut: false,
           validTimezone: true
         },
-        assignmentId
+        assignmentId,
+        organizationId
       },
       testTexterUser
     );
@@ -900,7 +903,8 @@ describe("Bulk Send", async () => {
           isOptedOut: false,
           validTimezone: true
         },
-        assignmentId
+        assignmentId,
+        organizationId
       },
       testTexterUser
     );
@@ -948,7 +952,7 @@ describe("Bulk Send", async () => {
   it("should send initial texts to as many contacts as are in the chunk size if chunk size equals the number of contacts", async () => {
     const params = {
       allowSendAll: true,
-      notInUsa: true,
+      allowSendAllEnabled: true,
       bulkSendChunkSize: NUMBER_OF_CONTACTS
     };
     await testBulkSend(
@@ -961,7 +965,7 @@ describe("Bulk Send", async () => {
   it("should send initial texts to as many contacts as are in the chunk size if chunk size is smaller than the number of contacts", async () => {
     const params = {
       allowSendAll: true,
-      notInUsa: true,
+      allowSendAllEnabled: true,
       bulkSendChunkSize: NUMBER_OF_CONTACTS - 1
     };
     await testBulkSend(
@@ -974,7 +978,7 @@ describe("Bulk Send", async () => {
   it("should send initial texts to all contacts if chunk size is greater than the number of contacts", async () => {
     const params = {
       allowSendAll: true,
-      notInUsa: true,
+      allowSendAllEnabled: true,
       bulkSendChunkSize: NUMBER_OF_CONTACTS + 1
     };
     await testBulkSend(
@@ -987,25 +991,25 @@ describe("Bulk Send", async () => {
   it("should NOT bulk send initial texts if ALLOW_SEND_ALL is not set", async () => {
     const params = {
       allowSendAll: false,
-      notInUsa: true,
+      allowSendAllEnabled: true,
       bulkSendChunkSize: NUMBER_OF_CONTACTS
     };
     await testBulkSend(params, 0, expectErrorBulkSending);
   });
 
-  it("should NOT bulk send initial texts if NOT_IN_USA is not set", async () => {
+  it("should NOT bulk send initial texts if ALLOW_SEND_ALL_ENABLED is not set", async () => {
     const params = {
       allowSendAll: true,
-      notInUsa: false,
+      allowSendAllEnabled: false,
       bulkSendChunkSize: NUMBER_OF_CONTACTS
     };
     await testBulkSend(params, 0, expectErrorBulkSending);
   });
 
-  it("should NOT bulk send initial texts if neither ALLOW_SEND_ALL nor NOT_IN_USA is not set", async () => {
+  it("should NOT bulk send initial texts if neither ALLOW_SEND_ALL nor ALLOW_SEND_ALL_ENABLED is not set", async () => {
     const params = {
       allowSendAll: false,
-      notInUsa: false,
+      allowSendAllEnabled: false,
       bulkSendChunkSize: NUMBER_OF_CONTACTS
     };
     await testBulkSend(params, 0, expectErrorBulkSending);
@@ -1209,6 +1213,22 @@ describe("all interaction steps fields travel round trip", () => {
 });
 
 describe("useOwnMessagingService", async () => {
+  const oldEnv = process.env;
+  beforeEach(async () => {
+    await ensureOrganizationTwilioWithMessagingService(
+      testOrganization,
+      testCampaign
+    );
+    process.env = {
+      ...process.env,
+      SERVICE_MANAGERS: "per-campaign-messageservices"
+    };
+  });
+
+  afterAll(() => {
+    process.env = oldEnv;
+  });
+
   it("uses default messaging service when false", async () => {
     await startCampaign(testAdminUser, testCampaign);
 
@@ -1221,11 +1241,17 @@ describe("useOwnMessagingService", async () => {
     expect(campaignDataResults.data.campaign.useOwnMessagingService).toEqual(
       false
     );
-    expect(campaignDataResults.data.campaign.messageserviceSid).toEqual(
-      global.TWILIO_MESSAGE_SERVICE_SID
+    const organization = await cacheableData.organization.load(organizationId);
+    const { messageServiceSid } = await getMessageServiceConfig(
+      "twilio",
+      organization
     );
+    expect(messageServiceSid).toEqual(global.TWILIO_MESSAGE_SERVICE_SID);
   });
   it("creates new messaging service when true", async () => {
+    jest.spyOn(twilio, "createMessagingService").mockReturnValue({
+      sid: "testTWILIOsid"
+    });
     await saveCampaign(
       testAdminUser,
       { id: testCampaign.id, organizationId },
@@ -1261,5 +1287,78 @@ describe("useOwnMessagingService", async () => {
     expect(campaignDataResults.data.campaign.messageserviceSid).toEqual(
       "testTWILIOsid"
     );
+  });
+});
+
+describe("per-campaign phone numbers", async () => {
+  const oldEnv = process.env;
+  beforeAll(() => {
+    process.env = {
+      ...process.env,
+      PHONE_INVENTORY: "1",
+      EXPERIMENTAL_CAMPAIGN_PHONE_NUMBERS: "1",
+      SERVICE_MANAGERS: "per-campaign-messageservices"
+    };
+  });
+
+  afterAll(() => {
+    process.env = oldEnv;
+  });
+
+  it("allocates numbers to a campaign and creates a messaging service on start", async () => {
+    const [phoneId] = await r.knex("owned_phone_number").insert(
+      {
+        organization_id: organizationId,
+        service: "fakeservice",
+        service_id: `fake${new Date().getTime()}`,
+        area_code: "917",
+        phone_number: "+19175555555"
+      },
+      "id"
+    );
+
+    await saveCampaign(
+      testAdminUser,
+      { id: testCampaign.id, organizationId },
+      "test campaign new title",
+      true,
+      [{ areaCode: "917", count: 1 }]
+    );
+
+    const phoneNumber = await r
+      .knex("owned_phone_number")
+      .where("id", phoneId)
+      .first();
+    expect(phoneNumber.allocated_to).toEqual("campaign");
+    expect(phoneNumber.allocated_to_id).toEqual(testCampaign.id.toString());
+
+    await startCampaign(testAdminUser, testCampaign);
+
+    const getCampaignsQuery = `
+      query getCampaign($campaignId: String!) {
+        campaign(id: $campaignId) {
+          id
+          useOwnMessagingService
+          messageserviceSid
+          inventoryPhoneNumberCounts {
+            areaCode
+            count
+          }
+        }
+      }
+    `;
+
+    const variables = {
+      campaignId: testCampaign.id
+    };
+
+    const { data } = await runGql(getCampaignsQuery, variables, testAdminUser);
+    expect(data.campaign.useOwnMessagingService).toEqual(true);
+    expect(data.campaign.messageserviceSid).toEqual(
+      "FAKEMESSAGINGSERVICE" // hard-coded in the the start campaign job
+    );
+    expect(data.campaign.inventoryPhoneNumberCounts).toEqual([
+      { areaCode: "917", count: 1 }
+    ]);
   });
 });

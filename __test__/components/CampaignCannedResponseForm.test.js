@@ -3,7 +3,7 @@
  */
 import React from "react";
 import { mount } from "enzyme";
-import MuiThemeProvider from "material-ui/styles/MuiThemeProvider";
+import AutoComplete from "@material-ui/lab/Autocomplete";
 import CampaignCannedResponseForm from "../../src/components/CampaignCannedResponseForm";
 import { StyleSheetTestUtils } from "aphrodite";
 
@@ -14,23 +14,44 @@ describe("CampaignCannedResponseForm component", () => {
     defaultValue: {
       id: 1,
       title: "Response1",
-      text: "Response1 desc"
-    }
+      text: "Response1 desc",
+      tagIds: [1, 2]
+    },
+    tags: [
+      {
+        id: 1,
+        name: "Tag1",
+        description: "Tag1Desc"
+      },
+      {
+        id: 2,
+        name: "Tag2",
+        description: "Tag2Desc"
+      }
+    ]
   };
 
   const props2 = {
     formButtonText: "Add Response",
-    defaultValue: {}
+    defaultValue: {},
+    tags: [
+      {
+        id: 1,
+        name: "Tag1",
+        description: "Tag1Desc"
+      },
+      {
+        id: 2,
+        name: "Tag2",
+        description: "Tag2Desc"
+      }
+    ]
   };
 
   // when
   test("Renders form with correct fields and label for editing", () => {
     StyleSheetTestUtils.suppressStyleInjection();
-    const wrapper = mount(
-      <MuiThemeProvider>
-        <CampaignCannedResponseForm {...props1} />
-      </MuiThemeProvider>
-    );
+    const wrapper = mount(<CampaignCannedResponseForm {...props1} />);
     expect(
       wrapper
         .find({ label: "Title" })
@@ -43,15 +64,23 @@ describe("CampaignCannedResponseForm component", () => {
         .find("button")
         .text()
     ).toBe("Edit Response");
+    expect(wrapper.find(AutoComplete).prop("value")).toEqual([
+      {
+        id: 1,
+        name: "Tag1",
+        description: "Tag1Desc"
+      },
+      {
+        id: 2,
+        name: "Tag2",
+        description: "Tag2Desc"
+      }
+    ]);
   });
 
   test("Renders form with correct fields and label for adding", () => {
     StyleSheetTestUtils.suppressStyleInjection();
-    const wrapper = mount(
-      <MuiThemeProvider>
-        <CampaignCannedResponseForm {...props2} />
-      </MuiThemeProvider>
-    );
+    const wrapper = mount(<CampaignCannedResponseForm {...props2} />);
     expect(
       wrapper
         .find({ label: "Title" })

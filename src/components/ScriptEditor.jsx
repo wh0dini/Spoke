@@ -11,7 +11,6 @@ import {
 import { delimit } from "../lib/scripts";
 import EmojiPicker from "./EmojiPicker";
 import Chip from "./Chip";
-import { red400, green500, green600, grey100 } from "material-ui/styles/colors";
 import { getCharCount } from "@trt2/gsm-charset-utils";
 
 const styles = {
@@ -31,18 +30,18 @@ const styles = {
     textAlign: "center"
   },
   goodField: {
-    color: green500,
+    color: "#4CAF50",
     direction: "ltr",
     unicodeBidi: "bidi-override"
   },
   badField: {
-    color: red400
+    color: "#EF5350"
   },
   scriptFieldButton: {
     fontSize: "11px",
-    color: green600,
+    color: "#43A047",
     textTransform: "none",
-    backgroundColor: grey100,
+    backgroundColor: "#F5F5F5",
     // margin: '5px 10px',
     cursor: "pointer"
     // display: 'inline-block',
@@ -80,9 +79,7 @@ function findWithRegex(regex, contentBlock, callback) {
 }
 
 const RecognizedField = props => (
-  <span {...props} style={styles.goodField}>
-    {props.children}
-  </span>
+  <span style={styles.goodField}>{props.children}</span>
 );
 
 RecognizedField.propTypes = {
@@ -90,9 +87,7 @@ RecognizedField.propTypes = {
 };
 
 const UnrecognizedField = props => (
-  <span {...props} style={styles.badField}>
-    {props.children}
-  </span>
+  <span style={styles.badField}>{props.children}</span>
 );
 
 UnrecognizedField.propTypes = {
@@ -120,7 +115,7 @@ class ScriptEditor extends React.Component {
     }, 200);
   }
 
-  componentWillReceiveProps() {
+  UNSAFE_componentWillReceiveProps() {
     const { scriptFields } = this.props;
     const { editorState } = this.state;
     const decorator = this.getCompositeDecorator(scriptFields);
@@ -152,6 +147,16 @@ class ScriptEditor extends React.Component {
     }
 
     return editorState;
+  }
+
+  componentDidMount() {
+    const { editorState } = this.state;
+    this.setState({ editorState: this.moveFocusToEnd(editorState) });
+  }
+
+  moveFocusToEnd(editorState) {
+    editorState = EditorState.moveSelectionToEnd(editorState);
+    return EditorState.forceSelection(editorState, editorState.getSelection());
   }
 
   getValue() {
@@ -205,11 +210,12 @@ class ScriptEditor extends React.Component {
     const { scriptFields } = this.props;
     return (
       <div style={styles.scriptFieldButtonSection}>
-        {scriptFields.map(field => (
+        {scriptFields.map((field, index) => (
           <Chip
+            key={index}
             style={styles.scriptFieldButton}
             text={delimit(field)}
-            onTouchTap={() => this.addTextToEditor(delimit(field))}
+            onClick={() => this.addTextToEditor(delimit(field))}
           />
         ))}
       </div>

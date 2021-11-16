@@ -1,9 +1,13 @@
 import React from "react";
 import type from "prop-types";
-import SelectField from "material-ui/SelectField";
-import MenuItem from "material-ui/MenuItem";
-import Divider from "material-ui/Divider";
-import Humps from "humps";
+
+import MenuItem from "@material-ui/core/MenuItem";
+import FormControl from "@material-ui/core/FormControl";
+import Select from "@material-ui/core/Select";
+import Divider from "@material-ui/core/Divider";
+import ListSubheader from "@material-ui/core/ListSubheader";
+import InputLabel from "@material-ui/core/InputLabel";
+import Input from "@material-ui/core/Input";
 
 const NO_TAG = { id: -1, name: "NO TAG" };
 const ANY_TAG = { id: -2, name: "ANY TAG" };
@@ -19,7 +23,8 @@ const makeTagMetafilter = (ignoreTags, anyTag, noTag, tagItem) => {
     ignoreTags,
     anyTag,
     noTag,
-    selectedTags: {}
+    selectedTags: {},
+    suppressedTags: {}
   };
 
   if (tagItem) {
@@ -41,27 +46,19 @@ export class TagsSelector extends React.Component {
     super(props);
 
     const tags = {};
-    this.props.tags.forEach(tag => {
+    props.tags.forEach(tag => {
       tags[tag.id] = tag;
     });
 
-    const tagFilter = this.cloneTagFilter(this) || EMPTY_TAG_FILTER;
-
     this.state = {
-      tags,
-      tagFilter
+      tags
     };
+    this.state.tagFilter = this.cloneTagFilter() || EMPTY_TAG_FILTER;
   }
-
-  componentWillReceiveProps = props => {
-    const tagFilter = this.cloneTagFilter(props);
-    if (tagFilter) {
-      this.setState({ tagFilter });
-    }
-  };
 
   cloneTagFilter = () => {
     const selectedTags = {};
+
     if (Object.keys(this.props.tagsFilter.selectedTags || {}).length > 0) {
       Object.keys(this.props.tagsFilter.selectedTags).forEach(key => {
         if (key > 0) {
@@ -70,11 +67,22 @@ export class TagsSelector extends React.Component {
       });
     }
 
+    const suppressedTags = {};
+
+    if (Object.keys(this.props.tagsFilter.suppressedTags || {}).length > 0) {
+      Object.keys(this.props.tagsFilter.suppressedTags).forEach(key => {
+        if (key) {
+          suppressedTags[key] = this.state.tags[key] || TAG_META_FILTERS[key];
+        }
+      });
+    }
+
     return {
       ignoreTags: this.props.tagsFilter.ignoreTags,
       anyTag: this.props.tagsFilter.anyTag,
       noTag: this.props.tagsFilter.noTag,
-      selectedTags
+      selectedTags,
+      suppressedTags
     };
   };
 
@@ -97,39 +105,40 @@ export class TagsSelector extends React.Component {
 
         if (itemClicked.id in tagFilter.selectedTags) {
           delete tagFilter.selectedTags[itemClicked.id];
+        } else if (itemClicked.id in tagFilter.suppressedTags) {
+          delete tagFilter.suppressedTags[itemClicked.id];
+        } else if (String(itemClicked.id).startsWith("s_")) {
+          tagFilter.suppressedTags[itemClicked.id] = itemClicked;
+          delete tagFilter.selectedTags[itemClicked.id.replace("s_", "")];
         } else {
           tagFilter.selectedTags[itemClicked.id] = itemClicked;
+          delete tagFilter.suppressedTags[`s_${itemClicked.id}`];
         }
     }
-
     this.setState({ tagFilter });
     this.props.onChange(tagFilter);
   };
 
-  createMenuItem = (tagFilter, isChecked) => {
+  createMenuItem = tagFilter => {
     return (
       <MenuItem
         key={tagFilter.id}
-        value={tagFilter}
-        primaryText={tagFilter.name}
-        insetChildren
-        checked={isChecked}
+        value={tagFilter.id}
         onClick={() => this.handleClick(tagFilter)}
-      />
+      >
+        {tagFilter.name}
+      </MenuItem>
     );
   };
 
   createMetaFilterMenuItems = metadataTagFilters => {
     const menuItems = metadataTagFilters.map(tagFilter => {
-      const isChecked = !!(this.state.tagFilter || {})[
-        Humps.camelize(tagFilter.name.toLowerCase())
-      ];
-      return this.createMenuItem(tagFilter, isChecked);
+      return this.createMenuItem(tagFilter);
     });
-    return [...menuItems, <Divider key={-9999} inset />];
+    return menuItems;
   };
 
-  createMenuItems = tagFilters => {
+  createTagMenuItems = tagFilters => {
     return tagFilters
       .sort((left, right) => {
         if (left.name === right.name) {
@@ -139,41 +148,65 @@ export class TagsSelector extends React.Component {
         return left.name < right.name ? 0 : 1;
       })
       .map(tagFilter => {
-        const isChecked =
-          tagFilter.id in (this.state.tagFilter.selectedTags || []);
-        return this.createMenuItem(tagFilter, isChecked);
+        return this.createMenuItem(tagFilter);
       });
   };
 
   determineSelectFieldValue = () => {
     const tagFilter = this.state.tagFilter;
     if (tagFilter.noTag) {
-      return [NO_TAG];
+      return [NO_TAG.id];
     }
 
     if (tagFilter.anyTag) {
-      return [ANY_TAG];
+      return [ANY_TAG.id];
     }
 
     if (tagFilter.ignoreTags) {
-      return [IGNORE_TAGS];
+      return [IGNORE_TAGS.id];
     }
 
-    return Object.values(tagFilter.selectedTags);
+    return [
+      ...Object.values(tagFilter.selectedTags),
+      ...Object.values(tagFilter.suppressedTags)
+    ].map(obj => obj.id);
   };
 
-  render = () => (
-    <SelectField
-      multiple
-      value={this.determineSelectFieldValue()}
-      hintText={this.props.hintText}
-      floatingLabelText={"Tags"}
-      floatingLabelFixed
-    >
-      {this.createMetaFilterMenuItems(Object.values(TAG_META_FILTERS))}
-      {this.createMenuItems(Object.values(this.state.tags))}
-    </SelectField>
-  );
+  render = () => {
+    return (
+      <FormControl fullWidth>
+        <InputLabel id="tagsSelector">Tags</InputLabel>
+        <Select
+          multiple
+          labelId="tagsSelector"
+          value={this.determineSelectFieldValue()}
+          input={<Input placeholder={this.props.hintText} />}
+        >
+          {this.createMetaFilterMenuItems(Object.values(TAG_META_FILTERS))}
+
+          <Divider variant="inset" />
+          <ListSubheader>FILTER BY TAGS</ListSubheader>
+
+          {this.createTagMenuItems(
+            Object.values(this.state.tags).map(tag => ({
+              ...tag,
+              id: tag.id.replace("s_", "")
+            }))
+          )}
+
+          <Divider variant="inset" />
+          <ListSubheader>SUPPRESS TAGS</ListSubheader>
+
+          {this.createTagMenuItems(
+            Object.values(this.state.tags).map(tag => ({
+              ...tag,
+              id: `s_${tag.id.replace("s_", "")}`
+            }))
+          )}
+        </Select>
+      </FormControl>
+    );
+  };
 }
 
 TagsSelector.propTypes = {

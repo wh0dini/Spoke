@@ -22,16 +22,19 @@ export function getFeatures(organization) {
   );
 }
 
+export const getOrDefault = (value, defaultValue) =>
+  value === "" ? defaultValue : value;
+
 export function getConfig(key, organization, opts) {
   if (organization) {
     // TODO: update to not parse if features is an object (vs. a string)
-    let features = getFeatures(organization);
-    if (features[key]) {
-      return features[key];
+    const features = getFeatures(organization);
+    if (features.hasOwnProperty(key)) {
+      return getOrDefault(features[key], opts && opts.default);
     }
   }
   if (opts && opts.onlyLocal) {
-    return;
+    return opts.default;
   }
   if (key in global) {
     if (opts && opts.truthy) {
@@ -39,7 +42,7 @@ export function getConfig(key, organization, opts) {
         global[key] && global[key] !== "0" && global[key] !== "false"
       );
     }
-    return global[key];
+    return getOrDefault(global[key], opts && opts.default);
   } else if (key in process.env) {
     if (opts && opts.truthy) {
       return Boolean(
@@ -48,16 +51,17 @@ export function getConfig(key, organization, opts) {
           process.env[key] !== "false"
       );
     }
-    return process.env[key];
+    return getOrDefault(process.env[key], opts && opts.default);
   } else if (CONFIG && key in CONFIG) {
-    return CONFIG[key];
+    return getOrDefault(CONFIG[key], opts && opts.default);
   } else if (opts && opts.truthy) {
     return false;
   }
+  return opts && opts.default;
 }
 
-export function hasConfig(key, organization) {
-  const val = getConfig(key, organization);
+export function hasConfig(key, organization, options = {}) {
+  const val = exports.getConfig(key, organization, options);
   // we need to allow "" as no config since env vars will occasionally be set to that to undefine it
   return Boolean(typeof val !== "undefined" && val !== "");
 }

@@ -6,10 +6,10 @@ import Controls from "../components/AssignmentTexter/Controls";
 import { applyScript } from "../lib/scripts";
 import gql from "graphql-tag";
 import loadData from "./hoc/load-data";
-import yup from "yup";
+import * as yup from "yup";
 import BulkSendButton from "../components/AssignmentTexter/BulkSendButton";
-import CircularProgress from "material-ui/CircularProgress";
-import Snackbar from "material-ui/Snackbar";
+import CircularProgress from "@material-ui/core/CircularProgress";
+import Snackbar from "@material-ui/core/Snackbar";
 import { isBetweenTextingHours } from "../lib";
 import { withRouter } from "react-router";
 import { getContactTimezone } from "../lib/timezones";
@@ -47,32 +47,43 @@ export class AssignmentTexterContact extends React.Component {
     const { contact } = this.props;
 
     let disabled = false;
+    let disabledSend = false;
     let disabledText = "Sending...";
-    let snackbarOnTouchTap = null;
+    let snackbarOnClick = null;
     let snackbarActionTitle = null;
     let snackbarError = null;
 
-    if (assignment.id !== contact.assignmentId || campaign.isArchived) {
+    if (campaign.isArchived && this.props.location.query.review === "1") {
+      disabledSend = true;
+    } else if (assignment.id !== contact.assignmentId || campaign.isArchived) {
       disabledText = "";
       disabled = true;
       snackbarError = "Your assignment has changed";
-      snackbarOnTouchTap = this.goBackToTodos;
+      snackbarOnClick = this.goBackToTodos;
       snackbarActionTitle = "Back to Todos";
-    } else if (contact.optOut && !this.props.reviewContactId) {
+    } else if (
+      contact.optOut &&
+      !this.props.reviewContactId &&
+      !(this.props.location.query.review === "1")
+    ) {
       disabledText = "Skipping opt-out...";
       disabled = true;
-    } else if (!this.isContactBetweenTextingHours(contact)) {
+    } else if (
+      !(this.props.location.query.review === "1") &&
+      !this.isContactBetweenTextingHours(contact)
+    ) {
       disabledText = "Refreshing ...";
       disabled = true;
     }
 
     this.state = {
       disabled,
+      disabledSend,
       disabledText,
       // this prevents jitter by not showing the optout/skip buttons right after sending
       snackbarError,
       snackbarActionTitle,
-      snackbarOnTouchTap
+      snackbarOnClick
     };
 
     this.setDisabled = this.setDisabled.bind(this);
@@ -80,11 +91,15 @@ export class AssignmentTexterContact extends React.Component {
 
   componentDidMount() {
     const { contact } = this.props;
-    if (contact.optOut) {
+    const { review } = this.props.location.query;
+    if (contact.optOut && !(review === "1")) {
       if (!this.props.reviewContactId) {
         this.skipContact();
       }
-    } else if (!this.isContactBetweenTextingHours(contact)) {
+    } else if (
+      !this.isContactBetweenTextingHours(contact) &&
+      !(review === "1")
+    ) {
       setTimeout(() => {
         this.props.refreshData();
         this.setState({ disabled: false });
@@ -139,7 +154,7 @@ export class AssignmentTexterContact extends React.Component {
 
       if (e.message === "Your assignment has changed") {
         newState.snackbarActionTitle = "Back to todos";
-        newState.snackbarOnTouchTap = this.goBackToTodos;
+        newState.snackbarOnClick = this.goBackToTodos;
         this.setState(newState);
       } else {
         // opt out or send message Error
@@ -158,8 +173,12 @@ export class AssignmentTexterContact extends React.Component {
     }
   };
 
-  handleMessageFormSubmit = async ({ messageText }) => {
-    const { contact } = this.props;
+  handleMessageFormSubmit = cannedResponseId => async ({ messageText }) => {
+    const { campaign, contact, messageStatusFilter } = this.props;
+    if (!messageText || messageText == "false") {
+      // defensive code -- if somehow message form validation fails, don't send a dumb "false" message
+      return;
+    }
     try {
       const message = this.createMessageToContact(messageText);
       if (this.state.disabled) {
@@ -167,9 +186,28 @@ export class AssignmentTexterContact extends React.Component {
       }
       this.setState({ disabled: true });
       console.log("sendMessage", contact.id);
-      await this.props.mutations.sendMessage(message, contact.id);
-
-      await this.handleSubmitSurveys();
+      if (
+        messageStatusFilter === "needsMessage" &&
+        (/fast=1/.test(document.location.search) ||
+          (campaign.title && /f=1/.test(campaign.title)))
+      ) {
+        // FUTURE: this can cause some confusion especially when a texter
+        // thinks they completed sending, but there are still waiting requests
+        // This probably needs some interface tweaks to communicate something
+        // to the texter.
+        this.props.mutations
+          .sendMessage(message, contact.id, cannedResponseId)
+          .then(() => {
+            console.log("sentMessage", contact.id);
+          });
+      } else {
+        await this.props.mutations.sendMessage(
+          message,
+          contact.id,
+          cannedResponseId
+        );
+        await this.handleSubmitSurveys();
+      }
       this.props.onFinishContact(contact.id);
     } catch (e) {
       this.handleSendMessageError(e);
@@ -246,18 +284,9 @@ export class AssignmentTexterContact extends React.Component {
     await this.props.mutations.updateContactTags(tags, contact.id);
   };
 
-  handleReleaseContacts = async releaseConversations => {
-    const { assignment } = this.props;
-    const result = await this.props.mutations.releaseContacts(
-      assignment.id,
-      releaseConversations
-    );
-    return result;
-  };
-
   handleEditStatus = async (messageStatus, finishContact) => {
     const { contact } = this.props;
-    await this.props.mutations.editCampaignContactMessageStatus(
+    const res = await this.props.mutations.editCampaignContactMessageStatus(
       messageStatus,
       contact.id
     );
@@ -265,6 +294,7 @@ export class AssignmentTexterContact extends React.Component {
       await this.handleSubmitSurveys();
       this.props.onFinishContact();
     }
+    return res;
   };
 
   handleOptOut = async ({ optOutMessageText }) => {
@@ -286,7 +316,11 @@ export class AssignmentTexterContact extends React.Component {
       };
 
       await this.handleSubmitSurveys();
-      await this.props.mutations.createOptOut(optOut, contact.id);
+      await this.props.mutations.createOptOut(
+        optOut,
+        contact.id,
+        !optOutMessageText.length
+      );
       this.props.onFinishContact(contact.id);
     } catch (err) {
       console.log("handleOptOut Error", err);
@@ -359,13 +393,6 @@ export class AssignmentTexterContact extends React.Component {
     this.props.refreshData();
   };
 
-  messageSchema = yup.object({
-    messageText: yup
-      .string()
-      .required("Can't send empty message")
-      .max(window.MAX_MESSAGE_LENGTH)
-  });
-
   render() {
     const ControlsComponent =
       /old=1/.test(document.location.search) ||
@@ -377,28 +404,32 @@ export class AssignmentTexterContact extends React.Component {
         {this.state.disabled &&
         this.props.messageStatusFilter !== "needsMessage" ? (
           <div className={css(styles.overlay)}>
-            <CircularProgress size={0.5} />
+            <CircularProgress color="primary" size={20} />
             {this.state.disabledText}
           </div>
-        ) : (
-          ""
-        )}
+        ) : null}
         <ControlsComponent
+          handleNavigateNext={this.props.handleNavigateNext}
+          handleNavigatePrevious={this.props.handleNavigatePrevious}
           contact={this.props.contact}
           campaign={this.props.campaign}
           texter={this.props.texter}
           assignment={this.props.assignment}
+          currentUser={this.props.currentUser}
+          organizationId={this.props.organizationId}
           navigationToolbarChildren={this.props.navigationToolbarChildren}
           messageStatusFilter={this.props.messageStatusFilter}
-          disabled={this.state.disabled}
+          disabled={this.state.disabled || this.state.disabledSend}
+          enabledSideboxes={this.props.enabledSideboxes}
+          review={this.props.location.query.review}
           onMessageFormSubmit={this.handleMessageFormSubmit}
           onOptOut={this.handleOptOut}
           onUpdateTags={this.handleUpdateTags}
-          onReleaseContacts={this.handleReleaseContacts}
           onQuestionResponseChange={this.handleQuestionResponseChange}
           onCreateCannedResponse={this.handleCreateCannedResponse}
           onExitTexter={this.props.onExitTexter}
           onEditStatus={this.handleEditStatus}
+          refreshData={this.props.refreshData}
           getMessageTextFromScript={this.getMessageTextFromScript}
         />
         {this.props.contact.messageStatus === "needsMessage" &&
@@ -411,15 +442,13 @@ export class AssignmentTexterContact extends React.Component {
             bulkSendMessages={this.bulkSendMessages}
             setDisabled={this.setDisabled}
           />
-        ) : (
-          ""
-        )}
+        ) : null}
         <Snackbar
           style={inlineStyles.snackbar}
           open={!!this.state.snackbarError}
           message={this.state.snackbarError || ""}
           action={this.state.snackbarActionTitle}
-          onActionClick={this.state.snackbarOnTouchTap}
+          onActionClick={this.state.snackbarOnClick}
         />
       </div>
     );
@@ -427,28 +456,39 @@ export class AssignmentTexterContact extends React.Component {
 }
 
 AssignmentTexterContact.propTypes = {
-  reviewContactid: PropTypes.string,
+  reviewContactId: PropTypes.string,
+  handleNavigateNext: PropTypes.func,
+  handleNavigatePrevious: PropTypes.func,
   contact: PropTypes.object,
   campaign: PropTypes.object,
   assignment: PropTypes.object,
+  currentUser: PropTypes.object,
   texter: PropTypes.object,
   navigationToolbarChildren: PropTypes.object,
+  enabledSideboxes: PropTypes.arrayOf(PropTypes.object),
   onFinishContact: PropTypes.func,
   router: PropTypes.object,
   mutations: PropTypes.object,
   refreshData: PropTypes.func,
   onExitTexter: PropTypes.func,
-  messageStatusFilter: PropTypes.string
+  messageStatusFilter: PropTypes.string,
+  organizationId: PropTypes.string,
+  location: PropTypes.object
 };
 
 const mutations = {
-  createOptOut: ownProps => (optOut, campaignContactId) => ({
+  createOptOut: ownProps => (optOut, campaignContactId, noReply) => ({
     mutation: gql`
       mutation createOptOut(
         $optOut: OptOutInput!
         $campaignContactId: String!
+        $noReply: Boolean!
       ) {
-        createOptOut(optOut: $optOut, campaignContactId: $campaignContactId) {
+        createOptOut(
+          optOut: $optOut
+          campaignContactId: $campaignContactId
+          noReply: $noReply
+        ) {
           id
           optOut {
             id
@@ -459,7 +499,8 @@ const mutations = {
     `,
     variables: {
       optOut,
-      campaignContactId
+      campaignContactId,
+      noReply
     }
   }),
   createCannedResponse: ownProps => cannedResponse => ({
@@ -520,10 +561,12 @@ const mutations = {
   updateContactTags: ownProps => (tags, campaignContactId) => ({
     mutation: gql`
       mutation updateContactTags(
-        $tags: [TagInput]
+        $tags: [ContactTagInput]
         $campaignContactId: String!
       ) {
-        updateContactTags(tags: $tags, campaignContactId: $campaignContactId)
+        updateContactTags(tags: $tags, campaignContactId: $campaignContactId) {
+          id
+        }
       }
     `,
     variables: {
@@ -551,13 +594,18 @@ const mutations = {
       campaignContactId
     }
   }),
-  sendMessage: ownProps => (message, campaignContactId) => ({
+  sendMessage: ownProps => (message, campaignContactId, cannedResponseId) => ({
     mutation: gql`
       mutation sendMessage(
         $message: MessageInput!
         $campaignContactId: String!
+        $cannedResponseId: String
       ) {
-        sendMessage(message: $message, campaignContactId: $campaignContactId) {
+        sendMessage(
+          message: $message
+          campaignContactId: $campaignContactId
+          cannedResponseId: $cannedResponseId
+        ) {
           id
           messageStatus
           messages {
@@ -571,36 +619,8 @@ const mutations = {
     `,
     variables: {
       message,
-      campaignContactId
-    }
-  }),
-  releaseContacts: ownProps => (assignmentId, releaseConversations) => ({
-    mutation: gql`
-      mutation releaseContacts(
-        $assignmentId: Int!
-        $contactsFilter: ContactsFilter!
-        $releaseConversations: Boolean
-      ) {
-        releaseContacts(
-          assignmentId: $assignmentId
-          releaseConversations: $releaseConversations
-        ) {
-          id
-          contacts(contactsFilter: $contactsFilter) {
-            id
-          }
-          allContactsCount: contactsCount
-        }
-      }
-    `,
-    variables: {
-      assignmentId,
-      releaseConversations,
-      contactsFilter: {
-        messageStatus: ownProps.messageStatusFilter,
-        isOptedOut: false,
-        validTimezone: true
-      }
+      campaignContactId,
+      cannedResponseId
     }
   }),
   bulkSendMessages: ownProps => assignmentId => ({

@@ -9,13 +9,13 @@ KEY: texterauth-${authId}
 - first_name: requiredString(),
 - last_name: requiredString(),
 - cell: requiredString(),
-- email: requiredString(),
-- created_at: timestamp(),
-- assigned_cell: type.string(),
-- is_superadmin: type.boolean(),
-- terms: type.boolean().default(false)
+ email: requiredString(),
+ created_at: timestamp(),
+ assigned_cell: type.string(),
+ is_superadmin: type.boolean(),
+ terms: type.boolean().default(false)
 
-HASH texterroles-<userId>
+ASH texterroles-<userId>
 key = orgId
 value = highest_role:org_name
 
@@ -207,6 +207,7 @@ const userLoggedIn = async (field, val) => {
         return await userOrgHighestRole(userId, orgId);
       })
     );
+    user.lookupField = field;
   }
   return user;
 };

@@ -14,6 +14,7 @@ import { schema as campaignContactSchema } from "./campaign-contact";
 import { schema as cannedResponseSchema } from "./canned-response";
 import { schema as inviteSchema } from "./invite";
 import { schema as tagSchema } from "./tag";
+import { schema as serviceSchema } from "./service";
 
 const rootSchema = gql`
   input CampaignContactInput {
@@ -35,6 +36,14 @@ const rootSchema = gql`
     campaignContactId: String!
     interactionStepId: String!
     value: String!
+  }
+
+  input BulkUpdateScriptInput {
+    searchString: String!
+    replaceString: String!
+    includeArchived: Boolean!
+    campaignTitlePrefixes: [String]!
+    targetObject: [String]!
   }
 
   input AnswerOptionInput {
@@ -70,7 +79,10 @@ const rootSchema = gql`
     primaryColor: String
     introHtml: String
     useDynamicAssignment: Boolean
+    requestAfterReply: Boolean
     batchSize: Int
+    batchPolicies: [String]
+    responseWindow: Float
     ingestMethod: String
     contactData: String
     organizationId: String
@@ -86,10 +98,12 @@ const rootSchema = gql`
     textingHoursEnd: Int
     texterUIConfig: TexterUIConfigInput
     timezone: String
+    inventoryPhoneNumberCounts: [CampaignPhoneNumberInput!]
   }
 
   input OrganizationInput {
     texterUIConfig: TexterUIConfigInput
+    settings: OrgSettingsInput
   }
 
   input MessageInput {
@@ -143,7 +157,7 @@ const rootSchema = gql`
 
   type CampaignIdAssignmentId {
     campaignId: String!
-    assignmentId: String!
+    assignmentId: String
   }
 
   input TagInput {
@@ -156,8 +170,15 @@ const rootSchema = gql`
     organizationId: String
   }
 
+  input ContactTagInput {
+    id: String
+    name: String
+    value: String
+  }
+
   type FoundContact {
     found: Boolean
+    assignment: Assignment
   }
 
   type PageInfo {
@@ -226,7 +247,7 @@ const rootSchema = gql`
       filterString: String
       filterBy: FilterPeopleBy
     ): UsersReturn
-    user(organizationId: ID!, userId: Int!): User
+    user(organizationId: String!, userId: Int): User
   }
 
   type RootMutation {
@@ -251,6 +272,7 @@ const rootSchema = gql`
       campaignId: String
       queryParams: String
     ): Organization
+    resetOrganizationJoinLink(organizationId: String!): Organization
     editOrganizationRoles(
       organizationId: String!
       userId: String!
@@ -273,21 +295,33 @@ const rootSchema = gql`
       organizationId: String!
       optOutMessage: String!
     ): Organization
-    updateTwilioAuth(
+    updateServiceVendorConfig(
       organizationId: String!
-      twilioAccountSid: String
-      twilioAuthToken: String
-      twilioMessageServiceSid: String
-    ): Organization
+      serviceName: String!
+      config: JSON!
+    ): ServiceVendor
+    updateServiceManager(
+      organizationId: String!
+      campaignId: String
+      serviceManagerName: String!
+      updateData: JSON!
+      fromCampaignStatsPage: Boolean
+    ): ServiceManager
     bulkSendMessages(assignmentId: Int!): [CampaignContact]
     sendMessage(
       message: MessageInput!
       campaignContactId: String!
+      cannedResponseId: String
     ): CampaignContact
     createOptOut(
       optOut: OptOutInput!
       campaignContactId: String!
+      noReply: Boolean
     ): CampaignContact
+    bulkUpdateScript(
+      organizationId: String!
+      findAndReplace: BulkUpdateScriptInput!
+    ): [ScriptUpdateResult]
     editCampaignContactMessageStatus(
       messageStatus: String!
       campaignContactId: String!
@@ -296,7 +330,15 @@ const rootSchema = gql`
       interactionStepIds: [String]
       campaignContactId: String!
     ): CampaignContact
-    updateContactTags(tags: [TagInput], campaignContactId: String!): String
+    updateFeedback(
+      assignmentId: String!
+      feedback: JSON
+      acknowledge: Boolean
+    ): Assignment
+    updateContactTags(
+      tags: [ContactTagInput]
+      campaignContactId: String!
+    ): CampaignContact
     updateQuestionResponses(
       questionResponses: [QuestionResponseInput]
       campaignContactId: String!
@@ -314,6 +356,7 @@ const rootSchema = gql`
     findNewCampaignContact(
       assignmentId: String!
       numberContacts: Int!
+      batchType: String
     ): FoundContact
     releaseContacts(
       assignmentId: String!
@@ -341,8 +384,10 @@ const rootSchema = gql`
       organizationId: ID!
       areaCode: String!
       limit: Int!
-      addToOrganizationMessagingService: Boolean
     ): JobRequest
+    deletePhoneNumbers(organizationId: ID!, areaCode: String!): JobRequest
+    releaseCampaignNumbers(campaignId: ID!): Campaign!
+    clearCachedOrgAndExtensionCaches(organizationId: String!): String
   }
 
   schema {
@@ -369,5 +414,6 @@ export const schema = [
   questionSchema,
   inviteSchema,
   conversationSchema,
-  tagSchema
+  tagSchema,
+  serviceSchema
 ];

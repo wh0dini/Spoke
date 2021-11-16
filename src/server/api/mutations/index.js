@@ -1,21 +1,16 @@
-import { bulkSendMessages } from "./bulkSendMessages";
-import { buyPhoneNumbers } from "./buyPhoneNumbers";
-import { editOrganization } from "./editOrganization";
-import { findNewCampaignContact } from "./findNewCampaignContact";
-import { joinOrganization } from "./joinOrganization";
-import { releaseContacts } from "./releaseContacts";
-import { sendMessage } from "./sendMessage";
-import { updateContactTags } from "./updateContactTags";
-import { updateQuestionResponses } from "./updateQuestionResponses";
-
-export {
-  bulkSendMessages,
-  buyPhoneNumbers,
-  editOrganization,
-  findNewCampaignContact,
-  joinOrganization,
-  releaseContacts,
-  sendMessage,
-  updateContactTags,
-  updateQuestionResponses
-};
+export { bulkSendMessages } from "./bulkSendMessages";
+export { bulkUpdateScript } from "./bulkUpdateScript";
+export { buyPhoneNumbers, deletePhoneNumbers } from "./buyPhoneNumbers";
+export { editOrganization } from "./editOrganization";
+export { findNewCampaignContact } from "./findNewCampaignContact";
+export { joinOrganization } from "./joinOrganization";
+export { releaseContacts } from "./releaseContacts";
+export { sendMessage } from "./sendMessage";
+export { startCampaign } from "./startCampaign";
+export { updateContactTags } from "./updateContactTags";
+export { updateQuestionResponses } from "./updateQuestionResponses";
+export { releaseCampaignNumbers } from "./releaseCampaignNumbers";
+export { clearCachedOrgAndExtensionCaches } from "./clearCachedOrgAndExtensionCaches";
+export { updateFeedback } from "./updateFeedback";
+export { updateServiceManager } from "./updateServiceManager";
+export { updateServiceVendorConfig } from "./updateServiceVendorConfig";

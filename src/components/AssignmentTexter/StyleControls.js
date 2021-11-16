@@ -6,17 +6,18 @@ export const messageListStyles = {
   // passesd directly to <MessageList>
   messageList: {
     overflow: "hidden",
-    overflow: "-moz-scrollbars-vertical",
-    maxWidth: "574px"
+    overflow: "-moz-scrollbars-vertical"
   },
   messageSent: {
-    textAlign: "right",
+    textAlign: "left",
     marginLeft: "20%",
     marginRight: "10px",
     backgroundColor: "white",
     borderRadius: "16px",
     marginBottom: "10px",
-    fontSize: "95%"
+    fontSize: "95%",
+    width: "auto",
+    maxWidth: "500px"
   },
   messageReceived: {
     marginRight: "20%",
@@ -27,7 +28,9 @@ export const messageListStyles = {
     //fontWeight: "600",
     fontSize: "110%",
     lineHeight: "120%",
-    marginBottom: "10px"
+    marginBottom: "10px",
+    width: "auto",
+    maxWidth: "500px"
   }
 };
 
@@ -46,9 +49,6 @@ export const inlineStyles = {
   flatButtonLabel: {
     textTransform: "none",
     fontWeight: "bold"
-  },
-  popoverSidebox: {
-    backgroundColor: "rgb(240, 240, 240)"
   }
 };
 
@@ -64,6 +64,15 @@ export const flexStyles = StyleSheet.create({
     flexDirection: "column",
     height: "100%",
     backgroundColor: bgGrey
+  },
+  popoverSideboxesInner: {
+    // expand to fill the whole popover
+    width: "100%",
+    height: "100%",
+    // show campaign header in-view
+    top: "50px",
+    left: "18px",
+    padding: "20px"
   },
   popover: {
     width: "85%",
@@ -88,6 +97,7 @@ export const flexStyles = StyleSheet.create({
   },
   sectionSideBox: {
     flex: "0 1 240px",
+    overflowY: "scroll",
     textAlign: "center",
     padding: "24px",
     maxWidth: "240px",
@@ -115,6 +125,7 @@ export const flexStyles = StyleSheet.create({
     padding: "4px 10px 9px 10px",
     zIndex: 2000,
     backgroundColor: "white",
+    overflow: "visible",
     "@media (hover: hover) and (pointer: fine)": {
       // for touchpads and phones, the edge of the tablet is easier
       // vs for desktops, we want to maximize how far the mouse needs to travel
@@ -181,7 +192,7 @@ export const flexStyles = StyleSheet.create({
   subSubAnswerButtonsColumns: {
     height: "0px",
     "@media(min-height: 600px)": {
-      height: "40px" // TODO
+      height: "37px" // TODO
     },
     display: "inline-block",
     //flex: "1 1 50%",
@@ -213,7 +224,6 @@ export const flexStyles = StyleSheet.create({
   sectionSend: {
     //sendButtonWrapper
     flex: `0 0 auto`,
-    height: "36px",
     display: "flex",
     flexDirection: "column",
     flexWrap: "wrap",
@@ -239,6 +249,14 @@ export const flexStyles = StyleSheet.create({
     // backgroundColor: "white",
     borderRadius: "0",
     boxShadow: "none",
+    maxWidth: "300px",
+    "@media(max-width: 450px)": {
+      // mobile crunch
+      minWidth: "auto"
+    }
+  },
+  button: {
+    backgroundColor: "#FFF",
     maxWidth: "300px",
     "@media(max-width: 450px)": {
       // mobile crunch

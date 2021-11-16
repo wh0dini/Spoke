@@ -1,16 +1,35 @@
 // Tasks are lightweight, fire-and-forget functions run in the background.
 // Unlike Jobs, tasks are not tracked in the database.
-// See src/integrations/job-runners/README.md for more details
-import serviceMap from "../server/api/lib/services";
-import * as ActionHandlers from "../integrations/action-handlers";
-import { cacheableData } from "../server/models";
+// See src/extensions/job-runners/README.md for more details
+import serviceMap from "../extensions/service-vendors";
+import * as ActionHandlers from "../extensions/action-handlers";
+import { r, cacheableData } from "../server/models";
+import { processServiceManagers } from "../extensions/service-managers";
 
 export const Tasks = Object.freeze({
-  SEND_MESSAGE: "send_message",
   ACTION_HANDLER_QUESTION_RESPONSE: "action_handler:question_response",
   ACTION_HANDLER_TAG_UPDATE: "action_handler:tag_update",
-  CAMPAIGN_START_CACHE: "campaign_start_cache"
+  CAMPAIGN_START_CACHE: "campaign_start_cache",
+  EXTENSION_TASK: "extension_task",
+  SEND_MESSAGE: "send_message",
+  SERVICE_MANAGER_TRIGGER: "service_manager_trigger"
 });
+
+const serviceManagerTrigger = async ({
+  functionName,
+  organizationId,
+  data
+}) => {
+  let organization;
+  if (organizationId) {
+    organization = await cacheableData.organization.load(organizationId);
+  }
+  const serviceManagerData = await processServiceManagers(
+    functionName,
+    organization,
+    data
+  );
+};
 
 const sendMessage = async ({
   message,
@@ -23,28 +42,59 @@ const sendMessage = async ({
   if (!service) {
     throw new Error(`Failed to find service for message ${message}`);
   }
+  const serviceManagerData = await processServiceManagers(
+    "onMessageSend",
+    organization,
+    { message, contact, campaign }
+  );
 
-  await service.sendMessage(message, contact, trx, organization, campaign);
+  await service.sendMessage({
+    message,
+    contact,
+    trx,
+    organization,
+    campaign,
+    serviceManagerData
+  });
 };
 
 const questionResponseActionHandler = async ({
   name,
   organization,
   questionResponse,
-  questionResponseInteractionStep,
+  interactionStep,
   campaign,
-  contact
+  contact,
+  wasDeleted,
+  previousValue
 }) => {
   const handler = await ActionHandlers.rawActionHandler(name);
-  // TODO: clean up processAction interface
-  await handler.processAction(
-    questionResponse,
-    questionResponseInteractionStep,
-    contact.id,
-    contact,
-    campaign,
-    organization
-  );
+
+  if (!wasDeleted) {
+    // TODO: clean up processAction interface
+    return handler.processAction({
+      questionResponse,
+      interactionStep,
+      campaignContactId: contact.id,
+      contact,
+      campaign,
+      organization,
+      previousValue
+    });
+  } else if (
+    handler.processDeletedQuestionResponse &&
+    typeof handler.processDeletedQuestionResponse === "function"
+  ) {
+    return handler.processDeletedQuestionResponse({
+      questionResponse,
+      interactionStep,
+      campaignContactId: contact.id,
+      contact,
+      campaign,
+      organization,
+      previousValue
+    });
+  }
 };
 
 const tagUpdateActionHandler = async ({
@@ -59,19 +109,20 @@ const tagUpdateActionHandler = async ({
   await handler.onTagUpdate(tags, contact, campaign, organization, texter);
 };
 
-const startCampaignCache = async ({ campaign, organization }) => {
+const startCampaignCache = async ({ campaign, organization }, contextVars) => {
   // Refresh all the campaign data into cache
   // This should refresh/clear any corruption
-  console.log("loadCampaignCache async tasks...", campaign.id);
   const loadAssignments = cacheableData.campaignContact.updateCampaignAssignmentCache(
     campaign.id
   );
   const loadContacts = cacheableData.campaignContact
-    .loadMany(campaign, organization, {})
+    .loadMany(campaign, organization, contextVars || {})
     .then(() => {
+      // eslint-disable-next-line no-console
       console.log("FINISHED contact loadMany", campaign.id);
     })
     .catch(err => {
+      // eslint-disable-next-line no-console
       console.error("ERROR contact loadMany", campaign.id, err, campaign);
     });
   const loadOptOuts = cacheableData.optOut.loadMany(organization.id);
@@ -81,11 +132,22 @@ const startCampaignCache = async ({ campaign, organization }) => {
   await loadOptOuts;
 };
 
+const extensionTask = async (taskData, contextVars) => {
+  if (taskData.path && taskData.method) {
+    const extension = require("../" + taskData.path);
+    if (extension && typeof extension[taskData.method] === "function") {
+      await extension[taskData.method](taskData, contextVars);
+    }
+  }
+};
+
 const taskMap = Object.freeze({
-  [Tasks.SEND_MESSAGE]: sendMessage,
   [Tasks.ACTION_HANDLER_QUESTION_RESPONSE]: questionResponseActionHandler,
   [Tasks.ACTION_HANDLER_TAG_UPDATE]: tagUpdateActionHandler,
-  [Tasks.CAMPAIGN_START_CACHE]: startCampaignCache
+  [Tasks.CAMPAIGN_START_CACHE]: startCampaignCache,
+  [Tasks.EXTENSION_TASK]: extensionTask,
+  [Tasks.SEND_MESSAGE]: sendMessage,
+  [Tasks.SERVICE_MANAGER_TRIGGER]: serviceManagerTrigger
 });
 
 export const invokeTaskFunction = async (taskName, payload) => {

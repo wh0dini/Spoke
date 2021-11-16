@@ -14,6 +14,7 @@ const {
   DB_PASSWORD,
   DB_USER,
   DB_SCHEMA,
+  DB_DEBUG = "false",
   DATABASE_URL,
   NODE_ENV
 } = process.env;
@@ -21,6 +22,7 @@ const min = parseInt(DB_MIN_POOL, 10);
 const max = parseInt(DB_MAX_POOL, 10);
 
 const pg = require("pg");
+const { parse: pgDbUrlParser } = require("pg-connection-string");
 
 const useSSL = DB_USE_SSL === "1" || DB_USE_SSL.toLowerCase() === "true";
 if (useSSL) pg.defaults.ssl = true;
@@ -48,15 +50,30 @@ if (DB_JSON) {
   };
 } else if (DATABASE_URL) {
   const dbType = DATABASE_URL.match(/^\w+/)[0];
+  if (/postgres/.test(dbType)) {
+    const connection = pgDbUrlParser(process.env.DATABASE_URL);
+    config = {
+      client: "pg",
+      connection: {
+        ...connection,
+        ssl: useSSL ? { rejectUnauthorized: false } : false
+      }
+    };
+  } else {
+    config = {
+      client: dbType,
+      connection: DATABASE_URL,
+      ssl: useSSL
+    };
+  }
+
   config = {
-    client: /postgres/.test(dbType) ? "pg" : dbType,
-    connection: DATABASE_URL,
+    ...config,
     searchPath: DB_SCHEMA || "",
     migrations: {
       directory: process.env.KNEX_MIGRATION_DIR || "./migrations/"
     },
-    pool: { min, max },
-    ssl: useSSL
+    pool: { min, max }
   };
 } else if (NODE_ENV === "test") {
   config = {
@@ -78,5 +95,7 @@ if (DB_JSON) {
     useNullAsDefault: true
   };
 }
+
+config.debug = DB_DEBUG === "1" || DB_DEBUG.toLowerCase() === "true";
 
 module.exports = config;

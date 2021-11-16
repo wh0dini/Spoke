@@ -1,5 +1,6 @@
 import _ from "lodash";
 import {
+  cacheableData,
   createLoaders,
   createTables,
   dropTables,
@@ -8,8 +9,16 @@ import {
   r
 } from "../src/server/models/";
 import { graphql } from "graphql";
+import gql from "graphql-tag";
+
+// Cypress integration tests do not use jest but do use these helpers
+// They would benefit from mocking mail services, though, so something to look in to.
+if (global.jest) {
+  global.jest.mock("../src/server/mail");
+}
 
 export async function setupTest() {
+  // FUTURE: only run this once maybe and then truncateTables() from models?
   await createTables();
 }
 
@@ -130,9 +139,7 @@ export const updateUserRoles = async (
   };
   const result = await runGql(query, variables, adminUser);
   if (result && result.errors) {
-    throw new Exception(
-      "editOrganizationRoles failed " + JSON.stringify(result)
-    );
+    throw new Error("editOrganizationRoles failed " + JSON.stringify(result));
   }
   return result;
 };
@@ -168,54 +175,103 @@ export async function createOrganization(user, invite) {
     name,
     inviteId
   };
-  return await graphql(mySchema, orgQuery, rootValue, context, variables);
-}
-
-export async function setTwilioAuth(user, organization) {
-  const rootValue = {};
-  const accountSid = "test_twilio_account_sid";
-  const authToken = "test_twlio_auth_token";
-  const messageServiceSid = "test_message_service";
-  const orgId = organization.data.createOrganization.id;
-
-  const context = getContext({ user });
-
-  const twilioQuery = `
-      mutation updateTwilioAuth(
-        $twilioAccountSid: String
-        $twilioAuthToken: String
-        $twilioMessageServiceSid: String
-        $organizationId: String!
-      ) {
-        updateTwilioAuth(
-          twilioAccountSid: $twilioAccountSid
-          twilioAuthToken: $twilioAuthToken
-          twilioMessageServiceSid: $twilioMessageServiceSid
-          organizationId: $organizationId
-        ) {
-          id
-          twilioAccountSid
-          twilioAuthToken
-          twilioMessageServiceSid
-        }
-      }`;
-
-  const variables = {
-    organizationId: orgId,
-    twilioAccountSid: accountSid,
-    twilioAuthToken: authToken,
-    twilioMessageServiceSid: messageServiceSid
-  };
-
   const result = await graphql(
     mySchema,
-    twilioQuery,
+    orgQuery,
     rootValue,
     context,
     variables
   );
   if (result && result.errors) {
-    console.log("updateTwilioAuth failed " + JSON.stringify(result));
+    throw new Error("createOrganization failed " + JSON.stringify(result));
+  }
+  return result;
+}
+
+export const updateOrganizationFeatures = async (
+  testOrganization,
+  newFeatures,
+  testCampaign = null
+) => {
+  const organization = testOrganization.data.createOrganization;
+  const existingFeatures = organization.features || {};
+  const features = {
+    ...existingFeatures,
+    ...newFeatures
+  };
+
+  await r
+    .knex("organization")
+    .where({ id: organization.id })
+    .update({ features: JSON.stringify(features) });
+  organization.feature = features;
+  await cacheableData.organization.clear(organization.id);
+
+  if (testCampaign) {
+    await r
+      .knex("campaign")
+      .where({ id: testCampaign.id })
+      .update({ organization_id: organization.id });
+    await cacheableData.campaign.clear(testCampaign.id);
+  }
+};
+
+export const ensureOrganizationTwilioWithMessagingService = async (
+  testOrganization,
+  testCampaign = null
+) => {
+  const newFeatures = {
+    TWILIO_MESSAGE_SERVICE_SID: global.TWILIO_MESSAGE_SERVICE_SID,
+    service: "twilio"
+  };
+  return updateOrganizationFeatures(
+    testOrganization,
+    newFeatures,
+    testCampaign
+  );
+};
+
+export async function setTwilioAuth(user, organization) {
+  const rootValue = {};
+  const twilioAccountSid = "ACtest_twilio_account_sid";
+  const twilioAuthToken = "test_twilio_auth_token";
+  const twilioMessageServiceSid = "test_message_service";
+  const orgId = organization.data.createOrganization.id;
+
+  const context = getContext({ user });
+
+  const query = `
+    mutation updateServiceVendorConfig(
+      $organizationId: String!
+      $serviceName: String!
+      $config: JSON!
+    ) {
+      updateServiceVendorConfig(
+        organizationId: $organizationId
+        serviceName: $serviceName
+        config: $config
+      ) {
+        id
+        config
+      }
+    }
+  `;
+
+  const twilioConfig = {
+    twilioAccountSid,
+    twilioAuthToken,
+    twilioMessageServiceSid
+  };
+
+  const variables = {
+    organizationId: orgId,
+    serviceName: "twilio",
+    config: JSON.stringify(twilioConfig)
+  };
+
+  const result = await graphql(mySchema, query, rootValue, context, variables);
+  if (result && result.errors) {
+    console.log("updateServiceVendorConfig failed " + JSON.stringify(result));
   }
   return result;
 }
@@ -252,7 +308,7 @@ export async function createCampaign(
     variables
   );
   if (result.errors) {
-    throw new Exception("Create campaign failed " + JSON.stringify(result));
+    throw new Error("Create campaign failed " + JSON.stringify(result));
   }
   return result.data.createCampaign;
 }
@@ -261,11 +317,13 @@ export async function saveCampaign(
   user,
   campaign,
   title = "test campaign",
-  useOwnMessagingService = "false"
+  useOwnMessagingService = "false",
+  inventoryPhoneNumberCounts = undefined
 ) {
   const rootValue = {};
   const description = "test description";
   const organizationId = campaign.organizationId;
+  const campaignId = campaign.id;
   const context = getContext({ user });
 
   const campaignQuery = `mutation editCampaign($campaignId: String!, $campaign: CampaignInput!) {
@@ -280,10 +338,9 @@ export async function saveCampaign(
     campaign: {
       title,
       description,
-      organizationId,
-      useOwnMessagingService
+      organizationId
     },
-    campaignId: campaign.id
+    campaignId
   };
   const result = await graphql(
     mySchema,
@@ -293,8 +350,45 @@ export async function saveCampaign(
     variables
   );
   if (result.errors) {
-    throw new Exception("Create campaign failed " + JSON.stringify(result));
+    throw new Error("Create campaign failed " + JSON.stringify(result));
   }
+  if (useOwnMessagingService !== "false" || inventoryPhoneNumberCounts) {
+    const serviceManagerQuery = `mutation updateServiceManager(
+        $organizationId: String!
+        $campaignId: String!
+        $serviceManagerName: String!
+        $updateData: JSON!
+      ) {
+        updateServiceManager(
+          organizationId: $organizationId
+          campaignId: $campaignId
+          serviceManagerName: $serviceManagerName
+          updateData: $updateData
+        ) {
+        id
+        name
+        data
+        fullyConfigured
+      }
+    }`;
+    const managerResult = await graphql(
+      mySchema,
+      serviceManagerQuery,
+      rootValue,
+      context,
+      {
+        organizationId,
+        serviceManagerName: "per-campaign-messageservices",
+        updateData: {
+          useOwnMessagingService,
+          inventoryPhoneNumberCounts
+        },
+        campaignId
+      }
+    );
+    console.log("managerResult", JSON.stringify(managerResult));
+  }
+
   return result.data.editCampaign;
 }
 
@@ -324,7 +418,7 @@ export async function createTexter(organization, userInfo = {}) {
     "TEXTER"
   );
   if (user.errors) {
-    throw new Exception("createUsers failed " + JSON.stringify(user));
+    throw new Error("createUsers failed " + JSON.stringify(user));
   }
   const joinQuery = `
   mutation joinOrganization($organizationUuid: String!) {
@@ -344,7 +438,7 @@ export async function createTexter(organization, userInfo = {}) {
     variables
   );
   if (result.errors) {
-    throw new Exception("joinOrganization failed " + JSON.stringify(result));
+    throw new Error("joinOrganization failed " + JSON.stringify(result));
   }
   return user;
 }
@@ -384,7 +478,7 @@ export async function assignTexter(admin, user, campaign, assignments) {
     variables
   );
   if (result.errors) {
-    throw new Exception("assignTexter failed " + JSON.stringify(result));
+    throw new Error("assignTexter failed " + JSON.stringify(result));
   }
   return result;
 }
@@ -520,7 +614,6 @@ export async function createCannedResponses(admin, campaign, cannedResponses) {
   );
 }
 
-jest.mock("../src/server/mail");
 export async function startCampaign(admin, campaign) {
   const rootValue = {};
   const startCampaignQuery = `mutation startCampaign($campaignId: String!) {
@@ -659,6 +752,9 @@ export const getConversations = async (
                   id
                   text
                   isFromContact
+                }
+                tags {
+                  id
                 }
                 optOut {
                   cell
