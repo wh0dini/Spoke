@@ -1,6 +1,6 @@
 # Bandwidth Integration
 
-Bandwidth.com is a telephone service API company. To use Bandwidth, set DEFAULT_SERVICE=bandwidth. The numpicker-basic and sticky-sender service managers are required for the Bandwidth extension to work. Make sure to include SERVICE_MANAGERS=numpicker-basic,sticky-sender
+Bandwidth.com is a telephone service API company. To use Bandwidth, set `DEFAULT_SERVICE=bandwidth`. The `sticky-sender` and `num-picker` service managers are required for the Bandwidth extension to work. Make sure to include `SERVICE_MANAGERS=sticky-sender,numpicker-basic`. `sticky-sender` must come before `numpicker-basic` in the `SERVICE_MANAGERS` environment variable.
 
 
 ## Bandwidth Instructions
