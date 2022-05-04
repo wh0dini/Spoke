@@ -187,6 +187,11 @@ export async function postMessageSend({
     changesToSave.service_id = response.result.id;
     organizationContact.status_code = 1;
     organizationContact.user_number = response.result.from;
+    cacheableData.campaignContact.updateStatus(
+      contact,
+      undefined,
+      changesToSave.messageservice_sid || changesToSave.user_number
+    );
   } else {
     // ERROR
     changesToSave.send_status = "ERROR";
