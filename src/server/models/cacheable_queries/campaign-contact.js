@@ -373,6 +373,7 @@ const campaignContactCache = {
       const cellData = await r.redis.getAsync(
         cellTargetKey(cell, messageServiceSid || userNumber)
       );
+      console.log("cellData:", cellData);
       // console.log('lookupByCell cache', cell, service, messageServiceSid, cellData)
       if (cellData) {
         // eslint-disable-next-line camelcase
@@ -423,7 +424,9 @@ const campaignContactCache = {
         )
         .select("campaign_contact_id", "campaign_id");
     }
+    console.log("messageQuery:", messageQuery);
     const [lastMessage] = await messageQuery;
+    console.log("lastMessage:", lastMessage);
     if (lastMessage) {
       return {
         id: lastMessage.campaign_contact_id,

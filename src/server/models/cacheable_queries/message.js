@@ -262,6 +262,7 @@ const messageCache = {
         messageInstance.messageservice_sid,
         messageInstance.user_number
       );
+      console.log("activeCellFound:", activeCellFound);
       // console.log("messageCache activeCellFound", activeCellFound);
       const matchError = await incomingMessageMatching(
         messageInstance,
