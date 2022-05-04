@@ -9,10 +9,24 @@ Bandwidth.com is a telephone service API company. To use Bandwidth, set `DEFAULT
 2. Create a sub-account.
 3. Add a location to your sub-account.
 4. Create an application. Fill out the following fields:
-    1. Callback URL: `https://<YOUR_APP_URL>/bandwidth/<ORGANIZATION_ID>`
-5. Leave all other fields as their default value.
-6. Click the "CREATE APPLICATION" button.
-7. Associate the created location to the application.
+    1. Callback URL: `<BASE_URL_ENV_VAR>/bandwidth/<ORGANIZATION_ID>`
+    2. Enable `Use a username/password for callbacks`
+    3. Callback user ID: `bandwidth.com`
+5. Open a new tab and go to the following website: https://www.tutorialspoint.com/execute_nodejs_online.php
+6. Paste the following code into the code editor:
+    ```
+    const crypto = require("crypto");
+    const hmac = crypto.createHmac("sha256", <SESSION_SECRET_ENV_VAR>);
+    const test = hmac.update("<BASE_URL_ENV_VAR>");
+    hmac.update(String(<ORGANIZATION_ID>));
+    console.log(hmac.digest("base64"));
+    ```
+7. Click the "Excecute" button in the top left corner. A value will be printed to the console on the right of the screen. Copy the value.
+8. Go back to the Bandwidth application tab.
+9. Paste the value into the following "Callback password" field
+10. Leave all other fields as their default value.
+11. Click the "CREATE APPLICATION" button.
+12. Associate the created location to the application.
 
 
 ## Spoke Instructions
@@ -30,4 +44,4 @@ If you are using these instructions for local development, use [ngrok](https://n
 1. Create an ngrok account and download ngrok.
 2. Start up your Spoke dev env.
 3. Open a new terminal and cd to where you downloaded ngrok.
-4. Run the following command: `./ngrok http 3000`. You will see an external-facing app URL. Use that to replace `<YOUR_APP_URL>` in the above instructions.
+4. Run the following command: `./ngrok http 3000`. You will see an external-facing app URL. Set the `BASE_URL` environment variable to that value.
