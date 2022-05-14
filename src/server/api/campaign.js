@@ -705,6 +705,20 @@ export const resolvers = {
         organization,
         { organization, campaign, user, loaders, fromCampaignStatsPage }
       );
+      console.log("Got here 10:", result);
+      const test = result.map(r => ({
+        id: `${r.name}-org${campaign.organization_id}-${campaign.id}${
+          fromCampaignStatsPage ? "stats" : ""
+        }`,
+        campaign,
+        organization,
+        // defaults
+        fullyConfigured: null,
+        unArchiveable: null,
+        data: null,
+        ...r
+      }));
+      console.log("Got here 11:", test);
       return result.map(r => ({
         id: `${r.name}-org${campaign.organization_id}-${campaign.id}${
           fromCampaignStatsPage ? "stats" : ""

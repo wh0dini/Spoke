@@ -85,6 +85,7 @@ export async function getCampaignData({
   // MUST NOT RETURN SECRETS!
   // called both from edit and stats contexts: editMode==true for edit page
   if (!fromCampaignStatsPage) {
+    console.log("Got here 1:", new Date());
     const features = getFeatures(campaign);
     const {
       scrubBadMobileNumsFreshStart = false,
@@ -93,24 +94,32 @@ export async function getCampaignData({
       scrubBadMobileNumsFinishedDeleteCount = null,
       scrubBadMobileNumsDeletedOnUpload = null
     } = features;
+    console.log("Got here 2:", new Date());
 
     const scrubMobileOptional = getConfig(
       "SCRUB_MOBILE_OPTIONAL",
       organization
     );
+    console.log("Got here 3:", new Date());
     const serviceClient = getServiceFromOrganization(organization);
+    console.log("Got here 4:", new Date());
     const scrubBadMobileNumsGettable =
       typeof serviceClient.getContactInfo === "function";
+    console.log("Got here 5:", new Date());
     let scrubBadMobileNumsCount = null;
+    console.log("Got here 6:", new Date());
     if (
       scrubBadMobileNumsGettable &&
       !scrubBadMobileNumsFreshStart &&
       !scrubBadMobileNumsFinished
     ) {
+      console.log("Got here 7:", new Date());
       scrubBadMobileNumsCount = await r.getCount(
         lookupQuery(campaign.id, organization.id)
       );
+      console.log("Got here 8:", new Date());
     }
+    console.log("Got here 9:", new Date());
     return {
       data: {
         scrubBadMobileNumsFreshStart,
