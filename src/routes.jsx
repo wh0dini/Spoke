@@ -126,9 +126,14 @@ export default function makeRoutes(requireAuth = () => {}) {
             <IndexRoute
               component={props => {
                 return (
-                  
                   <TexterDashboard
-                  fullScreen={<TexterTodoList {...props} />}
+                    main={<TexterTodoList {...props} />}
+                    topNav={
+                      <TopNav
+                        title="Spoke Texting"
+                        orgId={props.params.organizationId}
+                      />
+                    }
                   />
                 );
               }}
