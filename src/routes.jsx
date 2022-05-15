@@ -84,6 +84,7 @@ export default function makeRoutes(requireAuth = () => {}) {
           <Route path="tags" component={Tags} />
           <Route path="settings" component={Settings} />
           <Route path="phone-numbers" component={AdminPhoneNumberInventory} />
+          <Route path="sms" component={TexterDashboard} />
           <Route
             path="faqs"
             component={props => {
@@ -125,14 +126,9 @@ export default function makeRoutes(requireAuth = () => {}) {
             <IndexRoute
               component={props => {
                 return (
+                  
                   <TexterDashboard
                     main={<TexterTodoList {...props} />}
-                    topNav={
-                      <TopNav
-                        title="Spoke Texting"
-                        orgId={props.params.organizationId}
-                      />
-                    }
                   />
                 );
               }}
