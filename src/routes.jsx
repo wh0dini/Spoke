@@ -56,6 +56,22 @@ const checkTexterDowntime = requireAuth => (nextState, replace) => {
     return requireAuth(nextState, replace);
   }
 };
+const TexterRoute = ()=>{
+  return (
+    <Route path="todos">
+    <IndexRoute
+      component={props => {
+        return (
+          
+          <TexterDashboard
+            main={<TexterTodoList {...props} />}
+          />
+        );
+      }}
+    />
+    </Route>
+  )
+}
 
 export default function makeRoutes(requireAuth = () => {}) {
   return (
@@ -84,7 +100,7 @@ export default function makeRoutes(requireAuth = () => {}) {
           <Route path="tags" component={Tags} />
           <Route path="settings" component={Settings} />
           <Route path="phone-numbers" component={AdminPhoneNumberInventory} />
-          <Route path="sms" component={TexterDashboard} />
+          <Route path="sms" component={TexterRoute} {...props} />
           <Route
             path="faqs"
             component={props => {
