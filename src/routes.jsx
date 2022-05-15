@@ -122,7 +122,7 @@ export default function makeRoutes(requireAuth = () => {}) {
             }}
           />
           <Route path="todos">
-            <Route
+            <IndexRoute
               component={props => {
                 return (
                   <TexterDashboard
