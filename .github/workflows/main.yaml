@@ -1,0 +1,16 @@
+name: Deploy
+on:
+  push:
+    branches:
+      - master
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: akhileshns/heroku-deploy@v3.12.12 # This is the action
+        with:
+          heroku_api_key: cf7f5362-80b2-4db8-b340-ea4a646e1485
+          heroku_app_name: "ushealthsms" #Must be unique in Heroku
+          heroku_email: "travispadilla112@gmail.com"
+          usedocker: true

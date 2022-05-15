@@ -128,7 +128,7 @@ export default function makeRoutes(requireAuth = () => {}) {
                 return (
                   
                   <TexterDashboard
-                  fullscreen={<TexterTodoList {...props} />}
+                  fullScreen={<TexterTodoList {...props} />}
                   />
                 );
               }}
@@ -138,7 +138,7 @@ export default function makeRoutes(requireAuth = () => {}) {
               component={props => {
                 return (
                   <TexterDashboard
-                  fullscreen={<TexterTodoList {...props} />}
+                  fullScreen={<TexterTodoList {...props} />}
                     topNav={
                       <TopNav
                         title="Spoke Texting"
@@ -153,7 +153,7 @@ export default function makeRoutes(requireAuth = () => {}) {
               path="review/:reviewContactId"
               component={props => {
                 return (
-                  <TexterDashboard fullscreen={<TexterTodo {...props} />} />
+                  <TexterDashboard fullScreen={<TexterTodo {...props} />} />
                 );
               }}
             />
@@ -163,7 +163,7 @@ export default function makeRoutes(requireAuth = () => {}) {
                 component={props => {
                   return (
                     <TexterDashboard
-                    fullscreen={
+                    fullScreen={
                         <TexterTodo {...props} messageStatus="needsMessage" />
                       }
                     />
@@ -175,7 +175,7 @@ export default function makeRoutes(requireAuth = () => {}) {
                 component={props => {
                   return (
                     <TexterDashboard
-                    fullscreen={
+                    fullScreen={
                         <TexterTodo {...props} messageStatus="needsResponse" />
                       }
                     />
@@ -187,7 +187,7 @@ export default function makeRoutes(requireAuth = () => {}) {
                 component={props => {
                   return (
                     <TexterDashboard
-                    fullscreen={
+                    fullScreen={
                         <TexterTodo {...props} messageStatus="convo" />
                       }
                     />
@@ -199,7 +199,7 @@ export default function makeRoutes(requireAuth = () => {}) {
                 component={props => {
                   return (
                     <TexterDashboard
-                    fullscreen={
+                    fullScreen={
                         <TexterTodo {...props} messageStatus="closed" />
                       }
                     />
@@ -211,7 +211,7 @@ export default function makeRoutes(requireAuth = () => {}) {
                 component={props => {
                   return (
                     <TexterDashboard
-                    fullscreen={
+                    fullScreen={
                         <TexterTodo {...props} messageStatus="allReplies" />
                       }
                     />
@@ -223,7 +223,7 @@ export default function makeRoutes(requireAuth = () => {}) {
                 component={props => {
                   return (
                     <TexterDashboard
-                    fullscreen={
+                    fullScreen={
                         <TexterTodo
                           {...props}
                           messageStatus="needsMessageOrResponse"
