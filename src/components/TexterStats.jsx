@@ -35,7 +35,7 @@ class TexterStats extends React.Component {
       <Link
         component={RouterLink}
         key={id}
-        to={`/app/${this.props.organizationId}/todos/${id}/allreplies?review=1`}
+        to={`/admin/${this.props.organizationId}/todos/${id}/allreplies?review=1`}
       >
         Sweep conversations
       </Link>,
@@ -78,7 +78,7 @@ class TexterStats extends React.Component {
           <Link
             component={RouterLink}
             target="_blank"
-            to={`/app/${this.props.organizationId}/todos/other/${texter.id}`}
+            to={`/admin/${this.props.organizationId}/todos/other/${texter.id}`}
           >
             <OpenInNewIcon style={{ width: 14, height: 14 }} />
           </Link>

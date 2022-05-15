@@ -137,7 +137,7 @@ export class AssignmentTexterContact extends React.Component {
 
   goBackToTodos = () => {
     const { campaign } = this.props;
-    this.props.router.push(`/app/${campaign.organization.id}/todos`);
+    this.props.router.push(`/admin/${campaign.organization.id}/todos`);
   };
 
   handleSendMessageError = e => {

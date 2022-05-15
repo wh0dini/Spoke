@@ -168,7 +168,7 @@ export class InnerConversationPreviewModal extends Component {
 
     const { host, protocol } = document.location;
     const { assignmentId, campaignContactId } = conversation || {};
-    const url = `${protocol}//${host}/app/${organizationId}/todos/review/${campaignContactId}`;
+    const url = `${protocol}//${host}/admin/${organizationId}/todos/review/${campaignContactId}`;
 
     const primaryActions = [
       <span key="1">

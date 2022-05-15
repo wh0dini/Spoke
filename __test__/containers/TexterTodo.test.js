@@ -66,7 +66,7 @@ describe("TexterTodo tests...", () => {
       routerPushes,
       "needsMessage"
     );
-    expect(routerPushes[0]).toBe("/app/123/todos");
+    expect(routerPushes[0]).toBe("/admin/123/todos");
   });
 
   it("redirect if the assignment is null", () => {
@@ -81,7 +81,7 @@ describe("TexterTodo tests...", () => {
       "needsMessage",
       assignmentNull
     );
-    expect(routerPushes[0]).toBe("/app/123/todos");
+    expect(routerPushes[0]).toBe("/admin/123/todos");
   });
 
   it("redirect if the assignment is normal no redirects", () => {

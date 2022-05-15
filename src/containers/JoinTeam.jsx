@@ -37,7 +37,7 @@ class JoinTeam extends React.Component {
     }
 
     if (organization) {
-      this.props.router.push(`/app/${organization.data.joinOrganization.id}`);
+      this.props.router.push(`/admin/${organization.data.joinOrganization.id}`);
     }
   }
 

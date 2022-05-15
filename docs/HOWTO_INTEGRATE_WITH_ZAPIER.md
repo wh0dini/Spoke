@@ -135,7 +135,7 @@ An example payload for tag updates is below.
     "id": 62,
     "title": "COPY - COPY - Test Campaign for PR 1995"
   },
-  "conversation": "https://spoke.noonpropb2021.org/app/1/todos/review/59848",
+  "conversation": "https://spoke.noonpropb2021.org/admin/1/todos/review/59848",
   "tags": [
     "four",
     "five"
@@ -414,6 +414,6 @@ An example payload for questionResponse updates is below.
     }
   },
   "previousValue": null,
-  "conversationLink": "https://spoke.marxwasright.org/app/1/todos/review/59845"
+  "conversationLink": "https://spoke.marxwasright.org/admin/1/todos/review/59845"
 }
 ```

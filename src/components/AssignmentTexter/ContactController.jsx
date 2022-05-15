@@ -342,7 +342,7 @@ export class ContactController extends React.Component {
   };
 
   handleExitTexter = () => {
-    this.props.router.push("/app/" + (this.props.organizationId || ""));
+    this.props.router.push("/admin/" + (this.props.organizationId || ""));
   };
 
   contactCount() {

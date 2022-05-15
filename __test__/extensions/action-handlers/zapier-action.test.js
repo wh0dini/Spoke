@@ -355,7 +355,7 @@ describe("zapier-action", () => {
           id: 62,
           title: "COPY - COPY - Test Campaign for PR 1995"
         },
-        conversation: "https://spoke.marxwasright.org/app/1/todos/review/59848",
+        conversation: "https://spoke.marxwasright.org/admin/1/todos/review/59848",
         tags: ["four", "five"]
       };
 
@@ -861,7 +861,7 @@ describe("zapier-action", () => {
         organization,
         previousValue,
         conversationLink:
-          "https://spoke.marxwasright.org/app/1/todos/review/59845"
+          "https://spoke.marxwasright.org/admin/1/todos/review/59845"
       };
 
       const api_call = nock("https://hooks.zapier.com")

@@ -182,7 +182,7 @@ export class TexterTodo extends React.Component {
       (assignment.campaign.isArchived &&
         !(this.props.location.query.review === "1"))
     ) {
-      this.props.router.push(`/app/${this.props.params.organizationId}/todos`);
+      this.props.router.push(`/admin/${this.props.params.organizationId}/todos`);
     }
   }
 

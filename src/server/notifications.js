@@ -36,10 +36,10 @@ const sendAssignmentUserNotification = async (assignment, notification) => {
   let text;
   if (notification === Notifications.ASSIGNMENT_UPDATED) {
     subject = `[${organization.name}] Updated assignment: ${campaign.title}`;
-    text = `Your assignment changed: \n\n${baseUrl}/app/${campaign.organization_id}/todos`;
+    text = `Your assignment changed: \n\n${baseUrl}/admin/${campaign.organization_id}/todos`;
   } else if (notification === Notifications.ASSIGNMENT_CREATED) {
     subject = `[${organization.name}] New assignment: ${campaign.title}`;
-    text = `You just got a new texting assignment from ${organization.name}. You can start sending texts right away: \n\n${baseUrl}/app/${campaign.organization_id}/todos`;
+    text = `You just got a new texting assignment from ${organization.name}. You can start sending texts right away: \n\n${baseUrl}/admin/${campaign.organization_id}/todos`;
   }
 
   try {

@@ -46,7 +46,7 @@ class Home extends React.Component {
       } else if (user.ownerOrganizations.length > 0) {
         this.props.router.push(`/admin/${user.ownerOrganizations[0].id}`);
       } else if (user.texterOrganizations.length > 0) {
-        this.props.router.push(`/app/${user.texterOrganizations[0].id}`);
+        this.props.router.push(`/admin/${user.texterOrganizations[0].id}`);
       } else {
         this.setState({ orgLessUser: true });
       }

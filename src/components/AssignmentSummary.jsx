@@ -45,7 +45,7 @@ export class AssignmentSummaryBase extends Component {
     }
     if (contactsFilter) {
       router.push(
-        `/app/${organizationId}/todos/${assignmentId}/${contactsFilter}`
+        `/admin/${organizationId}/todos/${assignmentId}/${contactsFilter}`
       );
     }
   }

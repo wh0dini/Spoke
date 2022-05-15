@@ -51,20 +51,20 @@ export class TexterSideboxClass extends React.Component {
   gotoInitials = () => {
     const { campaign, assignment } = this.props;
     this.props.router.push(
-      `/app/${campaign.organization.id}/todos/${assignment.id}/text`
+      `/admin/${campaign.organization.id}/todos/${assignment.id}/text`
     );
   };
 
   gotoReplies = () => {
     const { campaign, assignment } = this.props;
     this.props.router.push(
-      `/app/${campaign.organization.id}/todos/${assignment.id}/reply`
+      `/admin/${campaign.organization.id}/todos/${assignment.id}/reply`
     );
   };
 
   gotoTodos = () => {
     const { campaign } = this.props;
-    this.props.router.push(`/app/${campaign.organization.id}/todos`);
+    this.props.router.push(`/admin/${campaign.organization.id}/todos`);
   };
 
   render() {

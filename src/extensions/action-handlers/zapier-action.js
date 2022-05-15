@@ -48,7 +48,7 @@ export async function onTagUpdate(
   }
 
   const baseUrl = getConfig("BASE_URL", organization);
-  const conversationLink = `${baseUrl}/app/${organization.id}/todos/review/${contact.id}`;
+  const conversationLink = `${baseUrl}/admin/${organization.id}/todos/review/${contact.id}`;
 
   const payload = {
     texter: {
@@ -107,7 +107,7 @@ export async function processAction({
     }
 
     const baseUrl = getConfig("BASE_URL", organization);
-    const conversationLink = `${baseUrl}/app/${organization.id}/todos/review/${contact.id}`;
+    const conversationLink = `${baseUrl}/admin/${organization.id}/todos/review/${contact.id}`;
     const campaignCopy = { ...campaign };
     delete campaignCopy.feature;
     delete campaignCopy.features;

@@ -57,7 +57,7 @@ function SecondaryText(props) {
         Sent {moment.utc(message.createdAt).fromNow()} by{" "}
         <RouterLink
           target="_blank"
-          to={`/app/${organizationId}/account/${message.userId}`}
+          to={`/admin/${organizationId}/account/${message.userId}`}
         >
           User {message.userId}
         </RouterLink>
