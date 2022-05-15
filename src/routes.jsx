@@ -56,22 +56,7 @@ const checkTexterDowntime = requireAuth => (nextState, replace) => {
     return requireAuth(nextState, replace);
   }
 };
-const TexterRoute = ()=>{
-  return (
-    <Route path="todos">
-    <IndexRoute
-      component={props => {
-        return (
-          
-          <TexterDashboard
-            main={<TexterTodoList {...props} />}
-          />
-        );
-      }}
-    />
-    </Route>
-  )
-}
+
 
 export default function makeRoutes(requireAuth = () => {}) {
   return (
@@ -100,7 +85,6 @@ export default function makeRoutes(requireAuth = () => {}) {
           <Route path="tags" component={Tags} />
           <Route path="settings" component={Settings} />
           <Route path="phone-numbers" component={AdminPhoneNumberInventory} />
-          <Route path="sms" component={TexterRoute} {...props} />
           <Route
             path="faqs"
             component={props => {
@@ -144,7 +128,7 @@ export default function makeRoutes(requireAuth = () => {}) {
                 return (
                   
                   <TexterDashboard
-                    main={<TexterTodoList {...props} />}
+                  fullscreen={<TexterTodoList {...props} />}
                   />
                 );
               }}
@@ -154,7 +138,7 @@ export default function makeRoutes(requireAuth = () => {}) {
               component={props => {
                 return (
                   <TexterDashboard
-                    main={<TexterTodoList {...props} />}
+                  fullscreen={<TexterTodoList {...props} />}
                     topNav={
                       <TopNav
                         title="Spoke Texting"
@@ -169,7 +153,7 @@ export default function makeRoutes(requireAuth = () => {}) {
               path="review/:reviewContactId"
               component={props => {
                 return (
-                  <TexterDashboard main={<TexterTodo {...props} />} />
+                  <TexterDashboard fullscreen={<TexterTodo {...props} />} />
                 );
               }}
             />
@@ -179,7 +163,7 @@ export default function makeRoutes(requireAuth = () => {}) {
                 component={props => {
                   return (
                     <TexterDashboard
-                    main={
+                    fullscreen={
                         <TexterTodo {...props} messageStatus="needsMessage" />
                       }
                     />
@@ -191,7 +175,7 @@ export default function makeRoutes(requireAuth = () => {}) {
                 component={props => {
                   return (
                     <TexterDashboard
-                    main={
+                    fullscreen={
                         <TexterTodo {...props} messageStatus="needsResponse" />
                       }
                     />
@@ -203,7 +187,7 @@ export default function makeRoutes(requireAuth = () => {}) {
                 component={props => {
                   return (
                     <TexterDashboard
-                    main={
+                    fullscreen={
                         <TexterTodo {...props} messageStatus="convo" />
                       }
                     />
@@ -215,7 +199,7 @@ export default function makeRoutes(requireAuth = () => {}) {
                 component={props => {
                   return (
                     <TexterDashboard
-                    main={
+                    fullscreen={
                         <TexterTodo {...props} messageStatus="closed" />
                       }
                     />
@@ -227,7 +211,7 @@ export default function makeRoutes(requireAuth = () => {}) {
                 component={props => {
                   return (
                     <TexterDashboard
-                    main={
+                    fullscreen={
                         <TexterTodo {...props} messageStatus="allReplies" />
                       }
                     />
@@ -239,7 +223,7 @@ export default function makeRoutes(requireAuth = () => {}) {
                 component={props => {
                   return (
                     <TexterDashboard
-                    main={
+                    fullscreen={
                         <TexterTodo
                           {...props}
                           messageStatus="needsMessageOrResponse"
