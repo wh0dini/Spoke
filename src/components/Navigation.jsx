@@ -56,7 +56,6 @@ const Navigation = function Navigation(props) {
                 <ListItemText primary={section.name} />
               </ListItem>
             ))}
-            <Divider />
             {switchListItem}
           </List>
         </Paper>
