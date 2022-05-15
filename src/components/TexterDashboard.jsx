@@ -18,16 +18,14 @@ const styles = StyleSheet.create({
 
 class TexterDashboard extends React.Component {
   render() {
-    const { main, topNav, fullScreen } = this.props;
+    const { main, topNav } = this.props;
     return (
-      fullScreen || (
         <div>
           {topNav}
           <div className={css(styles.container)}>
             <div className={css(styles.content)}>{main}</div>
           </div>
         </div>
-      )
     );
   }
 }
