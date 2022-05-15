@@ -84,6 +84,7 @@ export default function makeRoutes(requireAuth = () => {}) {
           <Route path="tags" component={Tags} />
           <Route path="settings" component={Settings} />
           <Route path="phone-numbers" component={AdminPhoneNumberInventory} />
+          <Route path="todo" component={TexterDashboard} />
           <Route
             path="faqs"
             component={props => {

@@ -69,26 +69,10 @@ class AdminDashboard extends React.Component {
     params.ownerPerms = hasRole("OWNER", roles || []);
 
     let sections = [
-      {
-        name: "Campaigns",
-        path: "campaigns",
-        role: "SUPERVOLUNTEER"
-      },
-      {
-        name: "People",
-        path: "people",
-        role: "ADMIN"
-      },
-      {
-        name: "Message Review",
-        path: "incoming",
-        role: "SUPERVOLUNTEER"
-      },
-      {
-        name: "Bulk Script Editor",
-        path: "bulk-script-editor",
-        role: "ADMIN"
-      },
+      { name: "Campaigns", path: "campaigns", role: "SUPERVOLUNTEER" },
+      { name: "People", path: "people", role: "ADMIN" },
+      { name: "Message Review", path: "incoming", role: "SUPERVOLUNTEER" },
+      { name: "Bulk Script Editor", path: "bulk-script-editor", role: "ADMIN" },
       {
         name: "Tags",
         path: "tags",
