@@ -161,83 +161,79 @@ export default function makeRoutes(requireAuth = () => {}) {
                 );
               }}
             />
-            <Route path=":assignmentId">
-              <Route
-                path="text"
-                component={props => {
-                  return (
-                    <TexterDashboard
-                      fullScreen={
-                        <TexterTodo {...props} messageStatus="needsMessage" />
-                      }
-                    />
-                  );
-                }}
-              />
-              <Route
-                path="reply"
-                component={props => {
-                  return (
-                    <TexterDashboard
-                      fullScreen={
-                        <TexterTodo {...props} messageStatus="needsResponse" />
-                      }
-                    />
-                  );
-                }}
-              />
-              <Route
-                path="stale"
-                component={props => {
-                  return (
-                    <TexterDashboard
-                      fullScreen={
-                        <TexterTodo {...props} messageStatus="convo" />
-                      }
-                    />
-                  );
-                }}
-              />
-              <Route
-                path="skipped"
-                component={props => {
-                  return (
-                    <TexterDashboard
-                      fullScreen={
-                        <TexterTodo {...props} messageStatus="closed" />
-                      }
-                    />
-                  );
-                }}
-              />
-              <Route
-                path="allreplies"
-                component={props => {
-                  return (
-                    <TexterDashboard
-                      fullScreen={
-                        <TexterTodo {...props} messageStatus="allReplies" />
-                      }
-                    />
-                  );
-                }}
-              />
-              <Route
-                path="all"
-                component={props => {
-                  return (
-                    <TexterDashboard
-                      fullScreen={
-                        <TexterTodo
-                          {...props}
-                          messageStatus="needsMessageOrResponse"
-                        />
-                      }
-                    />
-                  );
-                }}
-              />
-            </Route>
+            <Route
+              path="text"
+              component={props => {
+                return (
+                  <TexterDashboard
+                    fullScreen={
+                      <TexterTodo {...props} messageStatus="needsMessage" />
+                    }
+                  />
+                );
+              }}
+            />
+            <Route
+              path="reply"
+              component={props => {
+                return (
+                  <TexterDashboard
+                    fullScreen={
+                      <TexterTodo {...props} messageStatus="needsResponse" />
+                    }
+                  />
+                );
+              }}
+            />
+            <Route
+              path="stale"
+              component={props => {
+                return (
+                  <TexterDashboard
+                    fullScreen={<TexterTodo {...props} messageStatus="convo" />}
+                  />
+                );
+              }}
+            />
+            <Route
+              path="skipped"
+              component={props => {
+                return (
+                  <TexterDashboard
+                    fullScreen={
+                      <TexterTodo {...props} messageStatus="closed" />
+                    }
+                  />
+                );
+              }}
+            />
+            <Route
+              path="allreplies"
+              component={props => {
+                return (
+                  <TexterDashboard
+                    fullScreen={
+                      <TexterTodo {...props} messageStatus="allReplies" />
+                    }
+                  />
+                );
+              }}
+            />
+            <Route
+              path="all"
+              component={props => {
+                return (
+                  <TexterDashboard
+                    fullScreen={
+                      <TexterTodo
+                        {...props}
+                        messageStatus="needsMessageOrResponse"
+                      />
+                    }
+                  />
+                );
+              }}
+            />
           </Route>
         </Route>
       </Route>

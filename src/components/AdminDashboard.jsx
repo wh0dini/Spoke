@@ -103,6 +103,11 @@ class AdminDashboard extends React.Component {
         name: "Phone Numbers",
         path: "phone-numbers",
         role: "ADMIN"
+      },
+      {
+        name: "To Do",
+        path: "todo",
+        role: "ADMIN"
       }
     ];
 
