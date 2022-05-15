@@ -23,7 +23,7 @@ const styles = StyleSheet.create({
   },
   sideBarWithoutMenu: {
     padding: "5px",
-    paddingTop: "20px"
+    paddingTop: "0px"
   }
 });
 
