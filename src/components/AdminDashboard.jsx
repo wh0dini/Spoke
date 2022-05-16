@@ -73,8 +73,7 @@ class AdminDashboard extends React.Component {
       { name: "People", path: "people", role: "ADMIN" },
       { name: "Message Review", path: "incoming", role: "SUPERVOLUNTEER" },
       { name: "Bulk Script Editor", path: "bulk-script-editor", role: "ADMIN" },
-      {
-        name: "Tags",
+      { name: "Tags",
         path: "tags",
         role: "SUPERVOLUNTEER"
       },
@@ -86,11 +85,6 @@ class AdminDashboard extends React.Component {
       {
         name: "Phone Numbers",
         path: "phone-numbers",
-        role: "ADMIN"
-      },
-      {
-        name: "To Do",
-        path: "todo",
         role: "ADMIN"
       }
     ];
