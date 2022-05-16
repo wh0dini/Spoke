@@ -74,7 +74,7 @@ export class PeopleList extends Component {
                 {value}{" "}
                 <Link
                   target="_blank"
-                  to={`/admin/${organizationId}/todos/other/${texterId}`}
+                  to={`/app/${organizationId}/todos/other/${texterId}`}
                 >
                   <OpenInNewIcon
                     style={{ width: 14, height: 14 }}
