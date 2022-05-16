@@ -84,7 +84,6 @@ export default function makeRoutes(requireAuth = () => {}) {
           <Route path="tags" component={Tags} />
           <Route path="settings" component={Settings} />
           <Route path="phone-numbers" component={AdminPhoneNumberInventory} />
-          <IndexRedirect to="todos" />
           <Route
             path="faqs"
             component={props => {
@@ -123,121 +122,126 @@ export default function makeRoutes(requireAuth = () => {}) {
             }}
           />
           <Route path="todos">
-            <IndexRoute
-              component={props => {
-                return (
-                  <TexterDashboard
-                    main={<TexterTodoList {...props} />}
-                    topNav={
-                      <TopNav
-                        title="Spoke Texting"
-                        orgId={props.params.organizationId}
-                      />
-                    }
-                  />
-                );
-              }}
-            />
-            <Route
-              path="other/:userId"
-              component={props => {
-                return (
-                  <TexterDashboard
-                    fullScreen={<TexterTodoList {...props} />}
-                    topNav={
-                      <TopNav
-                        title="Spoke Texting"
-                        orgId={props.params.organizationId}
-                      />
-                    }
-                  />
-                );
-              }}
-            />
-            <Route
-              path="review/:reviewContactId"
-              component={props => {
-                return (
-                  <TexterDashboard fullScreen={<TexterTodo {...props} />} />
-                );
-              }}
-            />
-            <Route path=":assignmentId">
-              <Route
-                path="text"
+            <Route path=":organizationId" component={OrganizationWrapper}>
+              <IndexRoute
                 component={props => {
                   return (
                     <TexterDashboard
-                      fullScreen={
-                        <TexterTodo {...props} messageStatus="needsMessage" />
-                      }
-                    />
-                  );
-                }}
-              />
-              <Route
-                path="reply"
-                component={props => {
-                  return (
-                    <TexterDashboard
-                      fullScreen={
-                        <TexterTodo {...props} messageStatus="needsResponse" />
-                      }
-                    />
-                  );
-                }}
-              />
-              <Route
-                path="stale"
-                component={props => {
-                  return (
-                    <TexterDashboard
-                      fullScreen={
-                        <TexterTodo {...props} messageStatus="convo" />
-                      }
-                    />
-                  );
-                }}
-              />
-              <Route
-                path="skipped"
-                component={props => {
-                  return (
-                    <TexterDashboard
-                      fullScreen={
-                        <TexterTodo {...props} messageStatus="closed" />
-                      }
-                    />
-                  );
-                }}
-              />
-              <Route
-                path="allreplies"
-                component={props => {
-                  return (
-                    <TexterDashboard
-                      fullScreen={
-                        <TexterTodo {...props} messageStatus="allReplies" />
-                      }
-                    />
-                  );
-                }}
-              />
-              <Route
-                path="all"
-                component={props => {
-                  return (
-                    <TexterDashboard
-                      fullScreen={
-                        <TexterTodo
-                          {...props}
-                          messageStatus="needsMessageOrResponse"
+                      main={<TexterTodoList {...props} />}
+                      topNav={
+                        <TopNav
+                          title="Spoke Texting"
+                          orgId={props.params.organizationId}
                         />
                       }
                     />
                   );
                 }}
               />
+              <Route
+                path="other/:userId"
+                component={props => {
+                  return (
+                    <TexterDashboard
+                      fullScreen={<TexterTodoList {...props} />}
+                      topNav={
+                        <TopNav
+                          title="Spoke Texting"
+                          orgId={props.params.organizationId}
+                        />
+                      }
+                    />
+                  );
+                }}
+              />
+              <Route
+                path="review/:reviewContactId"
+                component={props => {
+                  return (
+                    <TexterDashboard fullScreen={<TexterTodo {...props} />} />
+                  );
+                }}
+              />
+              <Route path=":assignmentId">
+                <Route
+                  path="text"
+                  component={props => {
+                    return (
+                      <TexterDashboard
+                        fullScreen={
+                          <TexterTodo {...props} messageStatus="needsMessage" />
+                        }
+                      />
+                    );
+                  }}
+                />
+                <Route
+                  path="reply"
+                  component={props => {
+                    return (
+                      <TexterDashboard
+                        fullScreen={
+                          <TexterTodo
+                            {...props}
+                            messageStatus="needsResponse"
+                          />
+                        }
+                      />
+                    );
+                  }}
+                />
+                <Route
+                  path="stale"
+                  component={props => {
+                    return (
+                      <TexterDashboard
+                        fullScreen={
+                          <TexterTodo {...props} messageStatus="convo" />
+                        }
+                      />
+                    );
+                  }}
+                />
+                <Route
+                  path="skipped"
+                  component={props => {
+                    return (
+                      <TexterDashboard
+                        fullScreen={
+                          <TexterTodo {...props} messageStatus="closed" />
+                        }
+                      />
+                    );
+                  }}
+                />
+                <Route
+                  path="allreplies"
+                  component={props => {
+                    return (
+                      <TexterDashboard
+                        fullScreen={
+                          <TexterTodo {...props} messageStatus="allReplies" />
+                        }
+                      />
+                    );
+                  }}
+                />
+                <Route
+                  path="all"
+                  component={props => {
+                    return (
+                      <TexterDashboard
+                        fullScreen={
+                          <TexterTodo
+                            {...props}
+                            messageStatus="needsMessageOrResponse"
+                          />
+                        }
+                      />
+                    );
+                  }}
+                />
+              </Route>
             </Route>
           </Route>
         </Route>
