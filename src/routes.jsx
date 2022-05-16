@@ -84,45 +84,46 @@ export default function makeRoutes(requireAuth = () => {}) {
           <Route path="tags" component={Tags} />
           <Route path="settings" component={Settings} />
           <Route path="phone-numbers" component={AdminPhoneNumberInventory} />
-          <Route
-            path="faqs"
-            component={props => {
-              return (
-                <TexterDashboard
-                  main={<TexterFaqs faqs={FAQs} />}
-                  topNav={
-                    <TopNav
-                      title="Account"
-                      orgId={props.params.organizationId}
-                    />
-                  }
-                />
-              );
-            }}
-          />
-          <Route
-            path="account/:userId"
-            component={props => {
-              return (
-                <TexterDashboard
-                  main={
-                    <UserEdit
-                      userId={props.params.userId}
-                      organizationId={props.params.organizationId}
-                    />
-                  }
-                  topNav={
-                    <TopNav
-                      title="Account"
-                      orgId={props.params.organizationId}
-                    />
-                  }
-                />
-              );
-            }}
-          />
-          <Route path="todos">
-            <Route path=":organizationId" component={OrganizationWrapper}>
+          <Route path=":organizationId" component={OrganizationWrapper}>
+            <IndexRedirect to="todos" />
+            <Route
+              path="faqs"
+              component={props => {
+                return (
+                  <TexterDashboard
+                    main={<TexterFaqs faqs={FAQs} />}
+                    topNav={
+                      <TopNav
+                        title="Account"
+                        orgId={props.params.organizationId}
+                      />
+                    }
+                  />
+                );
+              }}
+            />
+            <Route
+              path="account/:userId"
+              component={props => {
+                return (
+                  <TexterDashboard
+                    main={
+                      <UserEdit
+                        userId={props.params.userId}
+                        organizationId={props.params.organizationId}
+                      />
+                    }
+                    topNav={
+                      <TopNav
+                        title="Account"
+                        orgId={props.params.organizationId}
+                      />
+                    }
+                  />
+                );
+              }}
+            />
+            <Route path="todos">
               <IndexRoute
                 component={props => {
                   return (
@@ -143,7 +144,7 @@ export default function makeRoutes(requireAuth = () => {}) {
                 component={props => {
                   return (
                     <TexterDashboard
-                      fullScreen={<TexterTodoList {...props} />}
+                      main={<TexterTodoList {...props} />}
                       topNav={
                         <TopNav
                           title="Spoke Texting"
