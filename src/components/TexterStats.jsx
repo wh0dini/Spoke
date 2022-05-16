@@ -20,7 +20,6 @@ class TexterStats extends React.Component {
       return <div key={id} />;
     }
     let percentComplete = null;
-
     if (!campaign.useDynamicAssignment) {
       percentComplete = Math.round(
         ((contactsCount - unmessagedCount) * 100) / contactsCount

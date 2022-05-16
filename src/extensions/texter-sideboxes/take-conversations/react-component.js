@@ -28,7 +28,6 @@ export const showSidebox = ({ contact, currentUser, settingsData }) => {
     return true;
   }
 };
-
 export const showSummary = ({ texter, settingsData }) =>
   texter.roles &&
   texter.roles.indexOf("VETTED_TEXTER") >= 0 &&
