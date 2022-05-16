@@ -45,7 +45,7 @@ class AssignmentTexterFeedback extends Component {
       margin: "20px 0"
     },
     title: {
-      color: this.props.muiTheme.palette.common.white
+      color: this.props.muiTheme.palette.common.black
     },
     subtitle: {
       color: this.props.muiTheme.palette.common.white
@@ -57,11 +57,11 @@ class AssignmentTexterFeedback extends Component {
       backgroundColor: this.props.muiTheme.palette.info.main,
       maxWidth: 670,
       marginLeft: 12,
-      padding: 16
+      padding: 5
     },
     stepper: {
-      paddingLeft: 30,
-      paddingBottom: 50
+      paddingLeft: 10,
+      paddingBottom: 10
     },
     stepLabel: {
       fontWeight: "bolder",

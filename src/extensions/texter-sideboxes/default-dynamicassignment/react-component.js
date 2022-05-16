@@ -124,7 +124,7 @@ export class TexterSideboxClass extends React.Component {
           </div>
         ) : null}
         {messageStatusFilter === "needsMessage" && assignment.unrepliedCount ? (
-          <div style={{ marginBottom: "8px", paddingLeft: "12px" }}>
+          <div style={{ marginBottom: "8px", paddingLeft: "6px" }}>
             <Badge badgeContent={assignment.unrepliedCount} color="primary">
               <Button variant="contained" onClick={this.gotoReplies}>
                 Go To Replies
@@ -135,7 +135,7 @@ export class TexterSideboxClass extends React.Component {
         {messageStatusFilter &&
         messageStatusFilter !== "needsMessage" &&
         assignment.unmessagedCount ? (
-          <div style={{ marginBottom: "8px", paddingLeft: "12px" }}>
+          <div style={{ marginBottom: "8px", paddingLeft: "6px" }}>
             <Badge badgeContent={assignment.unmessagedCount} color="primary">
               <Button variant="contained" onClick={this.gotoInitials}>
                 Send first texts

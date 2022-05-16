@@ -17,7 +17,7 @@ const defaultTheme = {
       main: "#fabe28"
     },
     info: {
-      main: "#3f80b2"
+      main: "#000000"
     }
   }
 };

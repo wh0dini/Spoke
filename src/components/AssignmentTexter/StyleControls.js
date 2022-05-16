@@ -11,8 +11,8 @@ export const messageListStyles = {
   },
   messageSent: {
     textAlign: "left",
-    marginLeft: "20%",
-    marginRight: "10px",
+    marginLeft: "5px",
+    marginRight: "5px",
     backgroundColor: "white",
     borderRadius: "16px",
     marginBottom: "10px",
@@ -21,8 +21,8 @@ export const messageListStyles = {
     maxWidth: "500px"
   },
   messageReceived: {
-    marginRight: "20%",
-    marginLeft: "10px",
+    marginRight: "5px%",
+    marginLeft: "5px",
     color: "white",
     backgroundColor: "hsla(206, 99%, 31%, 0.74)", //#01579B",
     borderRadius: "16px",
@@ -71,7 +71,7 @@ export const flexStyles = StyleSheet.create({
     // show campaign header in-view
     top: "50px",
     left: "18px",
-    padding: "20px"
+    padding: "5px"
   },
   popover: {
     width: "85%",
@@ -106,7 +106,7 @@ export const flexStyles = StyleSheet.create({
   },
   sectionSideBoxHeader: {
     height: 56,
-    backgroundColor: "rgba(126, 128, 139, .7)"
+    backgroundColor: "#000000"
   },
   sectionSideBoxContent: {
     padding: 24,
@@ -277,7 +277,7 @@ export const flexStyles = StyleSheet.create({
     }
   },
   button: {
-    backgroundColor: "#FFF",
+    backgroundColor: "#0000FF",
     maxWidth: "300px",
     "@media(max-width: 450px)": {
       // mobile crunch
