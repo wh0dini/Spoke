@@ -49,7 +49,7 @@ export class TexterSidebox extends React.Component {
     const { campaign, assignment, contact, settingsData } = this.props;
 
     const { host, protocol } = document.location;
-    const url = `${protocol}//${host}/admin/${campaign.organization.id}/todos/review/${this.props.contact.id}`;
+    const url = `${protocol}//${host}/app/${campaign.organization.id}/todos/review/${this.props.contact.id}`;
     return (
       <div>
         <div>

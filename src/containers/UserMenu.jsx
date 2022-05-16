@@ -52,13 +52,13 @@ export class UserMenuBase extends Component {
     } else if (value === "account") {
       const { orgId } = this.props;
       if (orgId) {
-        this.props.router.push(`/admin/${orgId}/account/${currentUser.id}`);
+        this.props.router.push(`/app/${orgId}/account/${currentUser.id}`);
       }
     } else {
       if (currentUser.superVolOrganizations.some(org => org.id === value)) {
         this.props.router.push(`/admin/${value}`);
       } else {
-        this.props.router.push(`/admin/${value}/todos`);
+        this.props.router.push(`/app/${value}/todos`);
       }
     }
   };
@@ -66,13 +66,13 @@ export class UserMenuBase extends Component {
   handleReturn = e => {
     e.preventDefault();
     const { orgId } = this.props;
-    this.props.router.push(`/admin/${orgId}/todos`);
+    this.props.router.push(`/app/${orgId}/todos`);
   };
 
   handleRequestFaqs = e => {
     e.preventDefault();
     const { orgId } = this.props;
-    this.props.router.push(`/admin/${orgId}/faqs`);
+    this.props.router.push(`/app/${orgId}/faqs`);
   };
 
   handleAdminOrganizations = e => {

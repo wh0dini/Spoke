@@ -58,7 +58,7 @@ export class TexterSideboxClass extends React.Component {
 
   gotoTodos = () => {
     const { campaign } = this.props;
-    this.props.router.push(`/admin/${campaign.organization.id}/todos`);
+    this.props.router.push(`/app/${campaign.organization.id}/todos`);
   };
 
   render() {
