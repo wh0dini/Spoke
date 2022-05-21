@@ -41,17 +41,12 @@ import AdminPhoneNumberInventory from "./containers/AdminPhoneNumberInventory";
 
 const checkDowntime = (nextState, replace) => {
   if (global.DOWNTIME && nextState.location.pathname !== "/downtime") {
-    replace({
-      pathname: "/downtime"
-    });
+    replace({ pathname: "/downtime" });
   }
 };
-
 const checkTexterDowntime = requireAuth => (nextState, replace) => {
   if (global.DOWNTIME_TEXTER && nextState.location.pathname !== "/downtime") {
-    replace({
-      pathname: "/downtime"
-    });
+    replace({ pathname: "/downtime" });
   } else {
     return requireAuth(nextState, replace);
   }
@@ -121,7 +116,6 @@ export default function makeRoutes(requireAuth = () => {}) {
               );
             }}
           />
-
           <Route path="todos">
             <IndexRoute
               component={props => {
