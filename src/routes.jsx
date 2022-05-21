@@ -84,26 +84,6 @@ export default function makeRoutes(requireAuth = () => {}) {
           <Route path="tags" component={Tags} />
           <Route path="settings" component={Settings} />
           <Route path="phone-numbers" component={AdminPhoneNumberInventory} />
-        </Route>
-      </Route>
-      <Route path="app" onEnter={checkTexterDowntime(requireAuth)}>
-        <IndexRoute
-          component={props => {
-            return (
-              <TexterDashboard
-                main={<DashboardLoader path="/app" />}
-                topNav={
-                  <TopNav
-                    title="Spoke Texting"
-                    orgId={props.params.organizationId}
-                  />
-                }
-              />
-            );
-          }}
-        />
-        <Route path=":organizationId" component={OrganizationWrapper}>
-          <IndexRedirect to="todos" />
           <Route
             path="faqs"
             component={props => {
@@ -141,6 +121,7 @@ export default function makeRoutes(requireAuth = () => {}) {
               );
             }}
           />
+
           <Route path="todos">
             <IndexRoute
               component={props => {
