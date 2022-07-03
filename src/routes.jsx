@@ -57,6 +57,7 @@ export default function makeRoutes(requireAuth = () => {}) {
     <Route path="/" component={App} onEnter={checkDowntime}>
       <IndexRoute component={Home} />
       <Route path="downtime" component={Downtime} />
+      <Route path="new" component={TexterTodo} />
       <Route path="admin" component={AdminDashboard} onEnter={requireAuth}>
         <IndexRoute component={() => <DashboardLoader path="/admin" />} />
         <Route path=":organizationId" component={OrganizationWrapper}>
