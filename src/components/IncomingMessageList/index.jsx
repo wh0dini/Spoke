@@ -133,7 +133,7 @@ export class IncomingMessageList extends Component {
                       : "")}{" "}
                   <RouterLink
                     target="_blank"
-                    to={`/app/${this.props.organizationId}/todos/other/${value.id}`}
+                    to={`/admin/${this.props.organizationId}/todos/other/${value.id}`}
                   >
                     <OpenInNewIcon
                       color="primary"
@@ -395,7 +395,7 @@ export class IncomingMessageList extends Component {
             <Link
               component={RouterLink}
               target="_blank"
-              to={`/app/${this.props.organizationId}/todos/${firstAssignmentid}/allreplies?review=1`}
+              to={`/admin/${this.props.organizationId}/todos/${firstAssignmentid}/allreplies?review=1`}
             >
               {`Sweep ${firstAssignmentTexter}'s messages in ${firstAssignmentCampaignTitle} `}
               <OpenInNewIcon

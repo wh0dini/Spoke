@@ -25,6 +25,7 @@ class TexterDashboard extends React.Component {
         <div>
           {topNav}
           <div className={css(styles.container)}>
+            TexterDashboard
             <div className={css(styles.content)}>{main}</div>
           </div>
         </div>

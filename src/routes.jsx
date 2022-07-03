@@ -119,17 +119,7 @@ export default function makeRoutes(requireAuth = () => {}) {
           <Route path="todos">
             <IndexRoute
               component={props => {
-                return (
-                  <TexterDashboard
-                    main={<TexterTodoList {...props} />}
-                    topNav={
-                      <TopNav
-                        title="Spoke Texting"
-                        orgId={props.params.organizationId}
-                      />
-                    }
-                  />
-                );
+                return <TexterDashboard main={<TexterTodoList {...props} />} />;
               }}
             />
             <Route
